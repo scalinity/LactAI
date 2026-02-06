@@ -6,17 +6,20 @@ import { db } from "@/db";
 import { useSessionFormStore } from "@/stores/useSessionFormStore";
 import { useAppStore } from "@/stores/useAppStore";
 
+const mockCreateSession = vi.fn().mockResolvedValue(1);
+const mockUpdateSession = vi.fn().mockResolvedValue(undefined);
+
 vi.mock("@/hooks/useSessions", () => ({
   useSessionActions: () => ({
-    createSession: vi.fn().mockResolvedValue(1),
-    updateSession: vi.fn().mockResolvedValue(undefined),
+    createSession: mockCreateSession,
+    updateSession: mockUpdateSession,
   }),
 }));
 
 describe("SessionForm", () => {
   beforeEach(() => {
     useSessionFormStore.getState().reset();
-    useAppStore.setState({ preferredUnit: "mL" });
+    useAppStore.setState({ preferredUnit: "ml" });
   });
 
   describe("Form Validation", () => {
@@ -36,7 +39,7 @@ describe("SessionForm", () => {
       const onSaved = vi.fn();
       render(<SessionForm onSaved={onSaved} />);
 
-      const amountInput = screen.getByRole("textbox", { name: /amount/i });
+      const amountInput = screen.getByPlaceholderText("0");
       await userEvent.type(amountInput, "abc");
 
       const submitButton = screen.getByRole("button", { name: /save/i });
@@ -51,7 +54,7 @@ describe("SessionForm", () => {
       const onSaved = vi.fn();
       render(<SessionForm onSaved={onSaved} />);
 
-      const amountInput = screen.getByRole("textbox", { name: /amount/i });
+      const amountInput = screen.getByPlaceholderText("0");
       await userEvent.type(amountInput, "120");
 
       const submitButton = screen.getByRole("button", { name: /save/i });
@@ -66,7 +69,7 @@ describe("SessionForm", () => {
       const onSaved = vi.fn();
       render(<SessionForm onSaved={onSaved} />);
 
-      const amountInput = screen.getByRole("textbox", { name: /amount/i });
+      const amountInput = screen.getByPlaceholderText("0");
       await userEvent.type(amountInput, "120.5");
 
       const submitButton = screen.getByRole("button", { name: /save/i });
@@ -81,26 +84,21 @@ describe("SessionForm", () => {
   describe("Form Submission", () => {
     it("should create new session on submit", async () => {
       const onSaved = vi.fn();
-      const { useSessionActions } = await import("@/hooks/useSessions");
-      const createSession = vi.fn().mockResolvedValue(1);
-      vi.mocked(useSessionActions).mockReturnValue({
-        createSession,
-        updateSession: vi.fn(),
-      } as any);
+      mockCreateSession.mockClear();
 
       render(<SessionForm onSaved={onSaved} />);
 
-      const amountInput = screen.getByRole("textbox", { name: /amount/i });
+      const amountInput = screen.getByPlaceholderText("0");
       await userEvent.type(amountInput, "150");
 
       const submitButton = screen.getByRole("button", { name: /save/i });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(createSession).toHaveBeenCalledWith(
+        expect(mockCreateSession).toHaveBeenCalledWith(
           expect.objectContaining({
             amount: "150",
-            unit: "mL",
+            unit: "ml",
           }),
         );
         expect(onSaved).toHaveBeenCalled();
@@ -113,24 +111,21 @@ describe("SessionForm", () => {
         amount_entered: 100,
         unit_entered: "ml",
         amount_ml: 100,
+        source: "manual",
+        created_at: new Date(),
+        updated_at: new Date(),
       });
 
-      const { useSessionActions } = await import("@/hooks/useSessions");
-      const updateSession = vi.fn().mockResolvedValue(undefined);
-      vi.mocked(useSessionActions).mockReturnValue({
-        createSession: vi.fn(),
-        updateSession,
-      } as any);
-
+      mockUpdateSession.mockClear();
       const onSaved = vi.fn();
       render(<SessionForm sessionId={sessionId as number} onSaved={onSaved} />);
 
       await waitFor(() => {
-        const amountInput = screen.getByRole("textbox", { name: /amount/i });
+        const amountInput = screen.getByPlaceholderText("0");
         expect(amountInput).toHaveValue("100");
       });
 
-      const amountInput = screen.getByRole("textbox", { name: /amount/i });
+      const amountInput = screen.getByPlaceholderText("0");
       await userEvent.clear(amountInput);
       await userEvent.type(amountInput, "200");
 
@@ -138,7 +133,7 @@ describe("SessionForm", () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(updateSession).toHaveBeenCalledWith(
+        expect(mockUpdateSession).toHaveBeenCalledWith(
           sessionId,
           expect.objectContaining({
             amount: "200",
@@ -150,7 +145,7 @@ describe("SessionForm", () => {
     it("should show success toast after save", async () => {
       render(<SessionForm />);
 
-      const amountInput = screen.getByRole("textbox", { name: /amount/i });
+      const amountInput = screen.getByPlaceholderText("0");
       await userEvent.type(amountInput, "100");
 
       const submitButton = screen.getByRole("button", { name: /save/i });
@@ -167,12 +162,15 @@ describe("SessionForm", () => {
         amount_entered: 100,
         unit_entered: "ml",
         amount_ml: 100,
+        source: "manual",
+        created_at: new Date(),
+        updated_at: new Date(),
       });
 
       render(<SessionForm sessionId={sessionId as number} />);
 
       await waitFor(() => {
-        const amountInput = screen.getByRole("textbox", { name: /amount/i });
+        const amountInput = screen.getByPlaceholderText("0");
         expect(amountInput).toHaveValue("100");
       });
 
@@ -187,7 +185,7 @@ describe("SessionForm", () => {
     it("should reset form after successful creation", async () => {
       render(<SessionForm />);
 
-      const amountInput = screen.getByRole("textbox", { name: /amount/i });
+      const amountInput = screen.getByPlaceholderText("0");
       await userEvent.type(amountInput, "150");
 
       const notesInput = screen.getByPlaceholderText(/optional notes/i);
@@ -206,7 +204,7 @@ describe("SessionForm", () => {
       const onSaved = vi.fn();
       render(<SessionForm onSaved={onSaved} />);
 
-      const amountInput = screen.getByRole("textbox", { name: /amount/i });
+      const amountInput = screen.getByPlaceholderText("0");
       await userEvent.type(amountInput, "100");
 
       const submitButton = screen.getByRole("button", { name: /save/i });
@@ -223,7 +221,7 @@ describe("SessionForm", () => {
       const onSaved = vi.fn();
       render(<SessionForm onSaved={onSaved} />);
 
-      const amountInput = screen.getByRole("textbox", { name: /amount/i });
+      const amountInput = screen.getByPlaceholderText("0");
       await userEvent.type(amountInput, "100{enter}");
 
       await waitFor(() => {
@@ -235,7 +233,7 @@ describe("SessionForm", () => {
       const onSaved = vi.fn();
       render(<SessionForm onSaved={onSaved} />);
 
-      const amountInput = screen.getByRole("textbox", { name: /amount/i });
+      const amountInput = screen.getByPlaceholderText("0");
       await userEvent.type(amountInput, "100");
 
       fireEvent.keyDown(amountInput, {
@@ -254,27 +252,30 @@ describe("SessionForm", () => {
 
   describe("Loading State", () => {
     it("should show loading state during submission", async () => {
-      const { useSessionActions } = await import("@/hooks/useSessions");
-      const createSession = vi
-        .fn()
-        .mockImplementation(
-          () => new Promise((resolve) => setTimeout(resolve, 100)),
-        );
-      vi.mocked(useSessionActions).mockReturnValue({
-        createSession,
-        updateSession: vi.fn(),
-      } as any);
+      mockCreateSession.mockImplementation(
+        () => new Promise((resolve) => setTimeout(() => resolve(1), 100)),
+      );
 
       render(<SessionForm />);
 
-      const amountInput = screen.getByRole("textbox", { name: /amount/i });
+      const amountInput = screen.getByPlaceholderText("0");
       await userEvent.type(amountInput, "100");
 
       const submitButton = screen.getByRole("button", { name: /save/i });
       fireEvent.click(submitButton);
 
       // Button should be disabled during save
-      expect(submitButton).toBeDisabled();
+      await waitFor(() => {
+        expect(submitButton).toBeDisabled();
+      });
+
+      // Wait for the delayed mock to resolve before next test
+      await waitFor(() => {
+        expect(submitButton).not.toBeDisabled();
+      });
+
+      mockCreateSession.mockReset();
+      mockCreateSession.mockResolvedValue(1);
     });
   });
 
@@ -289,12 +290,15 @@ describe("SessionForm", () => {
         side: "left",
         duration_min: 15,
         notes: "Test notes",
+        source: "manual",
+        created_at: new Date(),
+        updated_at: new Date(),
       });
 
       render(<SessionForm sessionId={sessionId as number} />);
 
       await waitFor(() => {
-        const amountInput = screen.getByRole("textbox", { name: /amount/i });
+        const amountInput = screen.getByPlaceholderText("0");
         expect(amountInput).toHaveValue("150");
       });
 
@@ -319,7 +323,7 @@ describe("SessionForm", () => {
       const onSaved = vi.fn();
       render(<SessionForm onSaved={onSaved} />);
 
-      const amountInput = screen.getByRole("textbox", { name: /amount/i });
+      const amountInput = screen.getByPlaceholderText("0");
       await userEvent.type(amountInput, "100");
 
       const submitButton = screen.getByRole("button", { name: /save/i });
@@ -331,16 +335,18 @@ describe("SessionForm", () => {
     });
 
     it("should submit with notes", async () => {
-      const { useSessionActions } = await import("@/hooks/useSessions");
-      const createSession = vi.fn().mockResolvedValue(1);
-      vi.mocked(useSessionActions).mockReturnValue({
-        createSession,
-        updateSession: vi.fn(),
-      } as any);
+      mockCreateSession.mockClear();
+      mockCreateSession.mockResolvedValue(1);
 
       render(<SessionForm />);
 
-      const amountInput = screen.getByRole("textbox", { name: /amount/i });
+      // Wait for form to be in clean state
+      await waitFor(() => {
+        const amountInput = screen.getByPlaceholderText("0");
+        expect(amountInput).toHaveValue("");
+      });
+
+      const amountInput = screen.getByPlaceholderText("0");
       await userEvent.type(amountInput, "100");
 
       const notesInput = screen.getByPlaceholderText(/optional notes/i);
@@ -350,7 +356,7 @@ describe("SessionForm", () => {
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(createSession).toHaveBeenCalledWith(
+        expect(mockCreateSession).toHaveBeenCalledWith(
           expect.objectContaining({
             notes: "Left side, morning feed",
           }),
@@ -359,26 +365,21 @@ describe("SessionForm", () => {
     });
 
     it("should submit with duration", async () => {
-      const { useSessionActions } = await import("@/hooks/useSessions");
-      const createSession = vi.fn().mockResolvedValue(1);
-      vi.mocked(useSessionActions).mockReturnValue({
-        createSession,
-        updateSession: vi.fn(),
-      } as any);
+      mockCreateSession.mockClear();
 
       render(<SessionForm />);
 
-      const amountInput = screen.getByRole("textbox", { name: /amount/i });
+      const amountInput = screen.getByPlaceholderText("0");
       await userEvent.type(amountInput, "100");
 
-      const durationInput = screen.getByRole("textbox", { name: /duration/i });
+      const durationInput = screen.getByLabelText("Duration (min)");
       await userEvent.type(durationInput, "20");
 
       const submitButton = screen.getByRole("button", { name: /save/i });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(createSession).toHaveBeenCalledWith(
+        expect(mockCreateSession).toHaveBeenCalledWith(
           expect.objectContaining({
             duration_min: "20",
           }),

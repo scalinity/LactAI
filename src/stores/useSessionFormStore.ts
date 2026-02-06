@@ -1,11 +1,13 @@
 import { create } from "zustand";
-import type { Unit, Side } from "@/types/common";
+import type { Unit, Side, SessionType } from "@/types/common";
+import { useAppStore } from "./useAppStore";
 
 interface SessionFormState {
   amount: string;
   unit: Unit;
   timestamp: Date;
   side: Side | null;
+  sessionType: SessionType;
   durationMin: string;
   notes: string;
   setField: <K extends keyof Omit<SessionFormState, "setField" | "reset">>(
@@ -20,6 +22,7 @@ const initialState = {
   unit: "ml" as Unit,
   timestamp: new Date(),
   side: null as Side | null,
+  sessionType: "feeding" as SessionType,
   durationMin: "",
   notes: "",
 };
@@ -27,5 +30,10 @@ const initialState = {
 export const useSessionFormStore = create<SessionFormState>((set) => ({
   ...initialState,
   setField: (key, value) => set({ [key]: value }),
-  reset: () => set({ ...initialState, timestamp: new Date() }),
+  reset: () =>
+    set({
+      ...initialState,
+      timestamp: new Date(),
+      unit: useAppStore.getState().preferredUnit ?? "ml",
+    }),
 }));

@@ -13,7 +13,8 @@ export function useSessionActions() {
       amount_entered: parseFloat(data.amount),
       unit_entered: data.unit,
       side: data.side || undefined,
-      duration_min: data.duration_min ? parseInt(data.duration_min) : undefined,
+      session_type: data.session_type || "feeding",
+      duration_min: data.duration_min ? parseInt(data.duration_min, 10) : undefined,
       notes: data.notes || undefined,
       source: "manual",
       created_at: now,
@@ -36,9 +37,10 @@ export function useSessionActions() {
     }
     if (data.timestamp !== undefined) updates.timestamp = data.timestamp;
     if (data.side !== undefined) updates.side = data.side || undefined;
+    if (data.session_type !== undefined) updates.session_type = data.session_type || "feeding";
     if (data.duration_min !== undefined) {
       updates.duration_min = data.duration_min
-        ? parseInt(data.duration_min)
+        ? parseInt(data.duration_min, 10)
         : undefined;
     }
     if (data.notes !== undefined) updates.notes = data.notes || undefined;

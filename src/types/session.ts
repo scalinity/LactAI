@@ -23,6 +23,7 @@ export interface SessionFormData {
   unit: Unit;
   timestamp: Date;
   side: Side | null;
+  session_type?: SessionType;
   duration_min: string;
   notes: string;
 }

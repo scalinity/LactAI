@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent, type KeyboardEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent, type KeyboardEvent } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/db";
 import { useSessionFormStore } from "@/stores/useSessionFormStore";
@@ -6,6 +6,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useSessionActions } from "@/hooks/useSessions";
 import AmountInput from "./AmountInput";
 import UnitToggle from "./UnitToggle";
+import TypeToggle from "./TypeToggle";
 import TimestampPicker from "./TimestampPicker";
 import SideSelector from "./SideSelector";
 import DurationInput from "./DurationInput";
@@ -18,12 +19,13 @@ interface SessionFormProps {
 }
 
 export default function SessionForm({ sessionId, onSaved }: SessionFormProps) {
-  const { amount, unit, timestamp, side, durationMin, notes, setField, reset } =
+  const { amount, unit, timestamp, side, sessionType, durationMin, notes, setField, reset } =
     useSessionFormStore();
   const { preferredUnit } = useAppStore();
   const { createSession, updateSession } = useSessionActions();
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   const existing = useLiveQuery(
     () => (sessionId ? db.sessions.get(sessionId) : undefined),
@@ -36,6 +38,7 @@ export default function SessionForm({ sessionId, onSaved }: SessionFormProps) {
       setField("unit", existing.unit_entered);
       setField("timestamp", existing.timestamp);
       setField("side", existing.side || null);
+      setField("sessionType", existing.session_type || "feeding");
       setField(
         "durationMin",
         existing.duration_min ? String(existing.duration_min) : "",
@@ -47,9 +50,18 @@ export default function SessionForm({ sessionId, onSaved }: SessionFormProps) {
     }
   }, [existing, sessionId, preferredUnit, setField, reset]);
 
+  // Cleanup toast timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleSubmit = async (e?: FormEvent) => {
     e?.preventDefault();
-    if (!amount || isNaN(parseFloat(amount))) return;
+    if (!amount || isNaN(parseFloat(amount)) || saving) return;
 
     setSaving(true);
     try {
@@ -59,6 +71,7 @@ export default function SessionForm({ sessionId, onSaved }: SessionFormProps) {
           unit,
           timestamp,
           side,
+          session_type: sessionType,
           duration_min: durationMin,
           notes,
         });
@@ -69,6 +82,7 @@ export default function SessionForm({ sessionId, onSaved }: SessionFormProps) {
           unit,
           timestamp,
           side,
+          session_type: sessionType,
           duration_min: durationMin,
           notes,
         });
@@ -81,7 +95,10 @@ export default function SessionForm({ sessionId, onSaved }: SessionFormProps) {
       setSaving(false);
     }
 
-    setTimeout(() => setToast(null), 2000);
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = setTimeout(() => setToast(null), 2000);
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
@@ -97,6 +114,14 @@ export default function SessionForm({ sessionId, onSaved }: SessionFormProps) {
       onKeyDown={handleKeyDown}
       className="space-y-6"
     >
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-plum">Type</p>
+        <TypeToggle
+          value={sessionType}
+          onChange={(v) => setField("sessionType", v)}
+        />
+      </div>
+
       <div className="flex flex-col items-center gap-2">
         <AmountInput
           value={amount}
