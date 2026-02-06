@@ -10,21 +10,32 @@ export interface CsvImportResult {
   errors: string[];
 }
 
-type CsvFormat = "export-13column" | "external-8column" | "pivot-daily" | "unknown";
+type CsvFormat =
+  | "export-13column"
+  | "external-8column"
+  | "pivot-daily"
+  | "unknown";
 
 // Validation constants
 const MAX_AMOUNT_ML = 500; // Biological maximum per session
 const MAX_DURATION_MIN = 120; // 2 hours maximum
 const VALID_SOURCES = ["manual", "imported", "ocr", "ai_vision"] as const;
 
+// Security: Strip control characters (preserves tabs/newlines for notes)
+function stripControlChars(value: string): string {
+  if (!value || typeof value !== "string") return value;
+  return value.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+}
+
 // Security: Sanitize CSV fields to prevent formula injection
 function sanitizeCSVField(value: string): string {
   if (!value || typeof value !== "string") return value;
+  const clean = stripControlChars(value);
   // Escape formula prefixes to prevent execution in Excel/Google Sheets
-  if (/^[=+\-@\t\r]/.test(value)) {
-    return "'" + value;
+  if (/^[=+\-@\t\r]/.test(clean)) {
+    return "'" + clean;
   }
-  return value;
+  return clean;
 }
 
 // Helper: Parse and validate positive finite numbers
@@ -58,7 +69,9 @@ export function parseFeedingPumpingCSV(csvText: string): CsvImportResult {
   // Try pivot-daily detection first (may have a title row before headers)
   // Check line 0 and line 1 for pivot headers
   for (let headerIdx = 0; headerIdx < Math.min(2, lines.length); headerIdx++) {
-    const candidateHeaders = parseCSVRow(lines[headerIdx]).map((h) => h.trim().toLowerCase());
+    const candidateHeaders = parseCSVRow(lines[headerIdx]).map((h) =>
+      h.trim().toLowerCase(),
+    );
     if (isPivotDailyHeaders(candidateHeaders)) {
       return parsePivotDailyFormat(lines, headerIdx);
     }
@@ -66,8 +79,9 @@ export function parseFeedingPumpingCSV(csvText: string): CsvImportResult {
 
   // Detect format from headers (parse once, reuse for format-specific parser)
   const headerLine = lines[0];
-  const headers = parseCSVRow(headerLine)
-    .map((h) => h.trim().replace(/[\x00-\x1F\x7F]/g, "")); // Remove control characters
+  const headers = parseCSVRow(headerLine).map((h) =>
+    h.trim().replace(/[\x00-\x1F\x7F]/g, ""),
+  ); // Remove control characters
   const headersLower = headers.map((h) => h.toLowerCase());
   const format = detectCsvFormat(headersLower);
 
@@ -102,24 +116,41 @@ export async function importCSVSessions(
   const MAX_SKIPPED_ITEMS = 1000;
 
   await db.transaction("rw", db.sessions, async () => {
+    // Performance: Batch fetch all potential duplicates (single query vs N queries)
+    const timestamps = sessions.map((s) => s.timestamp);
+
+    const existingSessions = await db.sessions
+      .where("timestamp")
+      .anyOf(timestamps)
+      .toArray();
+
+    // Build lookup map for O(1) duplicate detection
+    const existingMap = new Map<string, Session[]>();
+    existingSessions.forEach((s) => {
+      const key = `${s.timestamp.getTime()}_${s.amount_ml}_${s.session_type || "feeding"}`;
+      if (!existingMap.has(key)) {
+        existingMap.set(key, []);
+      }
+      existingMap.get(key)!.push(s);
+    });
+
     for (const session of sessions) {
-      const dupes = await findDuplicates({
-        timestamp: session.timestamp,
-        amount_ml: session.amount_ml,
-      });
+      const key = `${session.timestamp.getTime()}_${session.amount_ml}_${session.session_type || "feeding"}`;
+      const dupes = existingMap.get(key) || [];
 
       // Normalize undefined session_type to "feeding" for comparison
       // (legacy sessions before session_type was added default to feeding)
       const normalizeType = (t: string | undefined) => t || "feeding";
       const typeMatching = dupes.filter(
-        (d) => normalizeType(d.session_type) === normalizeType(session.session_type)
+        (d) =>
+          normalizeType(d.session_type) === normalizeType(session.session_type),
       );
 
       if (typeMatching.length > 0) {
         skipped++;
         if (skippedItems.length < MAX_SKIPPED_ITEMS) {
           skippedItems.push(
-            `${session.timestamp.toISOString()} ${session.session_type || "feeding"} ${session.amount_ml}ml`
+            `${session.timestamp.toISOString()} ${session.session_type || "feeding"} ${session.amount_ml}ml`,
           );
         }
         continue;
@@ -154,25 +185,29 @@ function detectCsvFormat(headers: string[]): CsvFormat {
   // 13-column export format signature: exact matches to avoid false positives
   const hasType = headers.some((h) => h === "type");
   const hasSide = headers.some((h) => h === "side");
-  const hasAmountMl = headers.some((h) => 
-    h === "amount (ml)" || (h.includes("amount") && h.includes("ml"))
+  const hasAmountMl = headers.some(
+    (h) => h === "amount (ml)" || (h.includes("amount") && h.includes("ml")),
   );
-  const hasLeftMl = headers.some((h) => 
-    h === "left (ml)" || (h.includes("left") && h.includes("ml"))
+  const hasLeftMl = headers.some(
+    (h) => h === "left (ml)" || (h.includes("left") && h.includes("ml")),
   );
-  
+
   if (hasType && hasSide && hasAmountMl && hasLeftMl) {
     return "export-13column";
   }
 
   // 8-column external format signature: stricter matching with word boundaries
-  const hasFeedTime = headers.some((h) => h === "feed time" || /^feed\s+time$/i.test(h));
-  const hasPumpTime = headers.some((h) => h === "pump time" || /^pump\s+time$/i.test(h));
-  // Match "pump izq" or "pump iq" but require "pump" prefix to avoid false positives
-  const hasPumpIzq = headers.some((h) => 
-    (h.includes("pump") && /\b(izq|iq)\b/i.test(h))
+  const hasFeedTime = headers.some(
+    (h) => h === "feed time" || /^feed\s+time$/i.test(h),
   );
-  
+  const hasPumpTime = headers.some(
+    (h) => h === "pump time" || /^pump\s+time$/i.test(h),
+  );
+  // Match "pump izq" or "pump iq" but require "pump" prefix to avoid false positives
+  const hasPumpIzq = headers.some(
+    (h) => h.includes("pump") && /\b(izq|iq)\b/i.test(h),
+  );
+
   if (hasFeedTime && hasPumpTime && hasPumpIzq) {
     return "external-8column";
   }
@@ -182,7 +217,10 @@ function detectCsvFormat(headers: string[]): CsvFormat {
 
 // --- 13-Column Parser ---
 
-function parse13ColumnFormat(lines: string[], headers: string[]): CsvImportResult {
+function parse13ColumnFormat(
+  lines: string[],
+  headers: string[],
+): CsvImportResult {
   // Headers already parsed and passed in - no need to re-parse
   const sessions: Omit<Session, "id">[] = [];
   const errors: string[] = [];
@@ -201,9 +239,11 @@ function parse13ColumnFormat(lines: string[], headers: string[]): CsvImportResul
 
   for (let i = 1; i < lines.length; i++) {
     const cols = parseCSVRow(lines[i]);
-    
+
     if (cols.length !== headers.length) {
-      errors.push(`Row ${i + 1}: expected ${headers.length} columns, got ${cols.length}`);
+      errors.push(
+        `Row ${i + 1}: expected ${headers.length} columns, got ${cols.length}`,
+      );
       continue;
     }
 
@@ -235,14 +275,16 @@ function parse13ColumnFormat(lines: string[], headers: string[]): CsvImportResul
     // Validate type
     const sessionType = typeStr.toLowerCase();
     if (sessionType !== "feeding" && sessionType !== "pumping") {
-      errors.push(`Row ${i + 1}: invalid type. Expected "feeding" or "pumping"`);
+      errors.push(
+        `Row ${i + 1}: invalid type. Expected "feeding" or "pumping"`,
+      );
       continue;
     }
 
     // Extract amount (prefer ml, fallback to oz) with finite number validation
     const amountMl = parsePositiveFiniteNumber(getCol(cols, "amount (ml)"));
     const amountOz = parsePositiveFiniteNumber(getCol(cols, "amount (oz)"));
-    
+
     let amount_ml: number;
     let amount_entered: number;
     let unit_entered: "ml" | "oz";
@@ -278,7 +320,7 @@ function parse13ColumnFormat(lines: string[], headers: string[]): CsvImportResul
 
     // Validate and sanitize source field
     const validatedSource = VALID_SOURCES.includes(sourceField as any)
-      ? (sourceField as typeof VALID_SOURCES[number])
+      ? (sourceField as (typeof VALID_SOURCES)[number])
       : "imported";
 
     // Build session
@@ -321,7 +363,9 @@ function parse13ColumnFormat(lines: string[], headers: string[]): CsvImportResul
       if (duration <= MAX_DURATION_MIN) {
         session.duration_min = duration;
       } else {
-        errors.push(`Row ${i + 1}: duration exceeds maximum (${MAX_DURATION_MIN} minutes)`);
+        errors.push(
+          `Row ${i + 1}: duration exceeds maximum (${MAX_DURATION_MIN} minutes)`,
+        );
         continue;
       }
     }
@@ -402,7 +446,9 @@ function parse8ColumnFormat(lines: string[]): CsvImportResult {
             amount_ml: ozToMl(amountOz),
             amount_entered: amountOz,
             unit_entered: "oz",
-            notes: feedNotes.trim() ? sanitizeCSVField(feedNotes.trim()) : undefined,
+            notes: feedNotes.trim()
+              ? sanitizeCSVField(feedNotes.trim())
+              : undefined,
             source: "imported",
             confidence: 1.0,
             created_at: now,
@@ -453,7 +499,10 @@ function parse8ColumnFormat(lines: string[]): CsvImportResult {
 
 // --- Pivot-Daily Parser (Google Sheets pivot table) ---
 
-function parsePivotDailyFormat(lines: string[], headerLineIdx: number): CsvImportResult {
+function parsePivotDailyFormat(
+  lines: string[],
+  headerLineIdx: number,
+): CsvImportResult {
   const sessions: Omit<Session, "id">[] = [];
   const errors: string[] = [];
   let feedCount = 0;
@@ -461,7 +510,9 @@ function parsePivotDailyFormat(lines: string[], headerLineIdx: number): CsvImpor
   const now = new Date();
 
   // Parse headers to find column indices
-  const headers = parseCSVRow(lines[headerLineIdx]).map((h) => h.trim().toLowerCase());
+  const headers = parseCSVRow(lines[headerLineIdx]).map((h) =>
+    h.trim().toLowerCase(),
+  );
   const dateIdx = headers.indexOf("date");
   const feedingIdx = headers.indexOf("feeding");
   const pumpIdx = headers.indexOf("pump");
@@ -484,7 +535,10 @@ function parsePivotDailyFormat(lines: string[], headerLineIdx: number): CsvImpor
     const dateStr = sanitizeCSVField(rawDate);
 
     // Skip Grand Total or any summary row
-    if (rawDate.toLowerCase().includes("grand total") || rawDate.toLowerCase().includes("total")) {
+    if (
+      rawDate.toLowerCase().includes("grand total") ||
+      rawDate.toLowerCase().includes("total")
+    ) {
       continue;
     }
 
@@ -493,7 +547,12 @@ function parsePivotDailyFormat(lines: string[], headerLineIdx: number): CsvImpor
     try {
       const parsed = parse(rawDate, "M/d/yyyy", new Date());
       if (!isNaN(parsed.getTime())) {
-        timestamp = set(parsed, { hours: 12, minutes: 0, seconds: 0, milliseconds: 0 });
+        timestamp = set(parsed, {
+          hours: 12,
+          minutes: 0,
+          seconds: 0,
+          milliseconds: 0,
+        });
       }
     } catch {
       // Fall through to error
@@ -566,13 +625,13 @@ function parseCSVRow(line: string): string[] {
         inQuotes = !inQuotes;
       }
     } else if (ch === "," && !inQuotes) {
-      result.push(chars.join(''));
+      result.push(chars.join(""));
       chars.length = 0; // Clear array efficiently
     } else {
       chars.push(ch);
     }
   }
-  result.push(chars.join(''));
+  result.push(chars.join(""));
   return result;
 }
 
