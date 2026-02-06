@@ -1,0 +1,21 @@
+name = "claudiaflow-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[kv_namespaces]]
+binding = "IMAGE_CACHE"
+id = "5321f96051ab4771b7ccd38defa0fa8e"
+
+[vars]
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+VISION_MODEL = "google/gemini-3-flash-preview"
+CHAT_MODEL = "x-ai/grok-4.1-fast"
+INSIGHTS_MODEL = "x-ai/grok-4.1-fast"
+MAX_IMAGE_SIZE_BYTES = "10485760"
+MAX_TOKENS_VISION = "4096"
+MAX_TOKENS_CHAT = "8192"
+MAX_TOKENS_INSIGHTS = "8192"
+MAX_DAILY_REQUESTS_PER_DEVICE = "100"
+APP_REFERER = "https://claudiaflow.app"
+APP_TITLE = "ClaudiaFlow"
