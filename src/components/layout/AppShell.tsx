@@ -1,5 +1,4 @@
-import type React from "react";
-import type ReactNode from "react";
+import type { ReactNode } from "react";
 import Header from "./Header";
 import BottomNav from "./BottomNav";
 import { OfflineIndicator } from '@/components/ui/OfflineIndicator';

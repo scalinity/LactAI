@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useAppStore } from "@/stores/useAppStore";
 import { Heart } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { UnitToggle } from "./ui/UnitToggle";
 
 export default function WelcomeLetter() {

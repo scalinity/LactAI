@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { UnitToggle } from "../components/ui/UnitToggle";
 import { useNavigate } from "react-router-dom";
 import { useAppStore } from "@/stores/useAppStore";

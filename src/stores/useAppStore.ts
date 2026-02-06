@@ -4,10 +4,10 @@ import type { Unit } from "@/types/common";
 
 interface AppState {
   hasCompletedOnboarding: boolean;
-  preferredUnit: "mL" | "oz";
+  preferredUnit: Unit;
   lastBackupPrompt: number | null;
   setHasCompletedOnboarding: (value: boolean) => void;
-  setPreferredUnit: (unit: "mL" | "oz") => void;
+  setPreferredUnit: (unit: Unit) => void;
   setLastBackupPrompt: (timestamp: number) => void;
   reset: () => void;
 }
@@ -16,7 +16,7 @@ export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       hasCompletedOnboarding: false,
-      preferredUnit: "mL",
+      preferredUnit: "ml",
       lastBackupPrompt: null,
       setHasCompletedOnboarding: (value) =>
         set({ hasCompletedOnboarding: value }),
@@ -25,7 +25,7 @@ export const useAppStore = create<AppState>()(
       reset: () =>
         set({
           hasCompletedOnboarding: false,
-          preferredUnit: "mL",
+          preferredUnit: "ml",
           lastBackupPrompt: null,
         }),
     }),

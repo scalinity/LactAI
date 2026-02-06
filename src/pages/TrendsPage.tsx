@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import type { RangePreset } from "@/types/common";
 import { useChartData } from "@/hooks/useChartData";
 import { useAppStore } from "@/stores/useAppStore";
