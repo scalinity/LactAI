@@ -17,12 +17,23 @@ export class ClaudiaFlowDB extends Dexie {
       chat_threads: "++id, created_at",
       chat_messages: "++id, thread_id, created_at",
     });
-    this.version(2).stores({
-      sessions: "++id, timestamp, side, source, session_type, created_at",
-      uploads: "++id, created_at, ai_status",
-      chat_threads: "++id, created_at",
-      chat_messages: "++id, thread_id, created_at",
-    });
+    this.version(2)
+      .stores({
+        sessions: "++id, timestamp, side, source, session_type, created_at",
+        uploads: "++id, created_at, ai_status",
+        chat_threads: "++id, created_at",
+        chat_messages: "++id, thread_id, created_at",
+      })
+      .upgrade((tx) => {
+        return tx
+          .table("sessions")
+          .toCollection()
+          .modify((session) => {
+            if (!session.session_type) {
+              session.session_type = "feeding";
+            }
+          });
+      });
   }
 }
 
