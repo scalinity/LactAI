@@ -119,6 +119,10 @@ export function useChatActions() {
           // Ignore parse errors, use store value
         }
       }
+      console.info(
+        "[Chat] Building context with preferredUnit:",
+        preferredUnit,
+      );
       const chatContext = await buildChatContext(preferredUnit);
 
       await streamChatMessage(

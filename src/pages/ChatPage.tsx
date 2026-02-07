@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useChatStore } from "@/stores/useChatStore";
+import { useAppStore } from "@/stores/useAppStore";
 import { useChatThreads } from "@/db/hooks";
 import { useChatActions } from "@/hooks/useChatMessages";
 import ThreadList from "@/components/chat/ThreadList";
@@ -22,6 +23,7 @@ export default function ChatPage() {
   const { createThread } = useChatActions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { t } = useTranslation();
+  const { preferredUnit, setPreferredUnit } = useAppStore();
 
   // Sync URL param to store
   useEffect(() => {
@@ -57,6 +59,15 @@ export default function ChatPage() {
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() =>
+              setPreferredUnit(preferredUnit === "ml" ? "oz" : "ml")
+            }
+            className="rounded-lg bg-plum/[0.06] px-2.5 py-1 text-xs font-bold text-plum/60 transition-all hover:bg-plum/10 active:scale-95"
+            title={`Data shown in ${preferredUnit}. Tap to switch.`}
+          >
+            {preferredUnit}
+          </button>
           <EphemeralToggle />
           <button
             onClick={handleNewThread}
