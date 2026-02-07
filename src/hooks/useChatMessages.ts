@@ -104,8 +104,21 @@ export function useChatActions() {
         };
       });
 
-      // Fix: Use callback-based API, not async generator
-      const preferredUnit = useAppStore.getState().preferredUnit;
+      // Read preferred unit from store, with localStorage fallback in case
+      // the persist middleware hasn't fully rehydrated yet.
+      let preferredUnit = useAppStore.getState().preferredUnit;
+      if (preferredUnit === "ml") {
+        try {
+          const raw = localStorage.getItem("app-storage");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const stored = parsed?.state?.preferredUnit;
+            if (stored === "oz") preferredUnit = "oz";
+          }
+        } catch {
+          // Ignore parse errors, use store value
+        }
+      }
       const chatContext = await buildChatContext(preferredUnit);
 
       await streamChatMessage(

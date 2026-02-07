@@ -70,12 +70,13 @@ export function getChatSystemPrompt(context?: {
     ? `The parent primarily uses ${context.expression_method} expression.`
     : "";
 
+  const unitContext = `\nAlways use ${context?.preferred_unit ?? "ml"} as the unit in your responses.\n`;
+
   const dataContext = context?.data_summary
     ? `
 USER DATA:
 You have access to this user's breast milk expression/feeding data. Use it to give personalized, data-driven answers.
 When the user asks about their data, supply, trends, or patterns, reference the specific numbers below.
-Always use ${context.preferred_unit ?? "ml"} as the unit in your responses.
 If the data shows concerning patterns (e.g., significant decrease in output), mention it gently and suggest consulting a professional.
 
 ${context.data_summary}
@@ -120,6 +121,7 @@ YOUR ROLE:
 
 ${ageContext}
 ${methodContext}
+${unitContext}
 ${dataContext}
 ${threadContext}
 
