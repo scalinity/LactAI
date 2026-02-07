@@ -11,10 +11,12 @@ export type PromptCategory =
   | "feeding"
   | "quick-help"
   | "self-care"
-  | "my-data";
+  | "my-data"
+  | "visuals";
 
 export const CATEGORY_META: Record<PromptCategory, { icon: string }> = {
   "my-data": { icon: "\u{1F4CA}" },
+  visuals: { icon: "\u{1F3A8}" },
   "baby-care": { icon: "\u{1F476}" },
   feeding: { icon: "\u{1F37C}" },
   "quick-help": { icon: "\u{1F4A1}" },
@@ -54,6 +56,39 @@ export const PROMPT_STARTERS: PromptStarter[] = [
     fullPrompt:
       "Give me a summary of my pumping and feeding week. How did I do?",
     icon: "\u{1F4CB}",
+  },
+
+  // Visuals
+  {
+    id: "vis-weekly",
+    category: "visuals",
+    shortLabel: "Weekly infographic",
+    fullPrompt:
+      "Create a visual infographic of my pumping and feeding data from this week",
+    icon: "\u{1F4CA}",
+  },
+  {
+    id: "vis-today",
+    category: "visuals",
+    shortLabel: "Today's visual",
+    fullPrompt: "Generate a visual summary of today's sessions",
+    icon: "\u{1F305}",
+  },
+  {
+    id: "vis-sides",
+    category: "visuals",
+    shortLabel: "Left vs right",
+    fullPrompt:
+      "Create a visual comparing my left vs right side pumping output",
+    icon: "\u{2696}\u{FE0F}",
+  },
+  {
+    id: "vis-trend",
+    category: "visuals",
+    shortLabel: "Supply trend visual",
+    fullPrompt:
+      "Make an infographic showing my milk supply trend over the past month",
+    icon: "\u{1F4C8}",
   },
 
   // Baby Care

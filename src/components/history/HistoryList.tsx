@@ -62,7 +62,7 @@ export default function HistoryList({ sessions, onDelete }: HistoryListProps) {
   const virtualizer = useVirtualizer({
     count: totalRows,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 60,
+    estimateSize: () => 72,
     overscan: 10,
   });
 
@@ -101,7 +101,7 @@ export default function HistoryList({ sessions, onDelete }: HistoryListProps) {
                   position: "absolute",
                   top: vItem.start,
                   width: "100%",
-                  height: vItem.size,
+                  minHeight: vItem.size,
                 }}
                 ref={virtualizer.measureElement}
                 data-index={vItem.index}
@@ -126,7 +126,7 @@ export default function HistoryList({ sessions, onDelete }: HistoryListProps) {
                 position: "absolute",
                 top: vItem.start,
                 width: "100%",
-                height: vItem.size,
+                minHeight: vItem.size,
               }}
               ref={virtualizer.measureElement}
               data-index={vItem.index}

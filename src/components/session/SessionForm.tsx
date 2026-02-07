@@ -17,6 +17,7 @@ import TypeToggle from "./TypeToggle";
 import TimestampPicker from "./TimestampPicker";
 import SideSelector from "./SideSelector";
 import DurationInput from "./DurationInput";
+import PumpTimer from "./PumpTimer";
 import Button from "@/components/ui/Button";
 import { Check } from "lucide-react";
 
@@ -157,6 +158,8 @@ export default function SessionForm({ sessionId, onSaved }: SessionFormProps) {
         <p className="text-sm font-medium text-plum">{t("session.side")}</p>
         <SideSelector value={side} onChange={(v) => setField("side", v)} />
       </div>
+
+      {sessionType === "pumping" && !sessionId && <PumpTimer />}
 
       <DurationInput
         value={durationMin}

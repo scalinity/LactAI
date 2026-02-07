@@ -6,6 +6,7 @@ import RangeSelector from "@/components/charts/RangeSelector";
 import TrendsContainer from "@/components/charts/TrendsContainer";
 import TrendSummaryCard from "@/components/ai-cards/TrendSummaryCard";
 import PatternFinderCard from "@/components/ai-cards/PatternFinderCard";
+import AIInsightsCard from "@/components/ai-cards/AIInsightsCard";
 import EmptyState from "@/components/ui/EmptyState";
 import { TrendingUp } from "lucide-react";
 import { UnitToggle } from "@/components/ui/UnitToggle";
@@ -60,6 +61,7 @@ export default function TrendsPage() {
             </h2>
             <TrendSummaryCard />
             <PatternFinderCard />
+            <AIInsightsCard period={rangePreset} sessions={sessions} />
           </div>
         </>
       )}

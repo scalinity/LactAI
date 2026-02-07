@@ -6,7 +6,14 @@ import { Download, Upload, FileSpreadsheet } from "lucide-react";
 
 export default function ExportImportBar() {
   const { exportCSV, exportJSON } = useExport();
-  const { importFromFile, importFromCSV, importing, result, error } = useImport();
+  const {
+    importFromFile,
+    importFromCSV,
+    importFromXLSX,
+    importing,
+    result,
+    error,
+  } = useImport();
   const fileRef = useRef<HTMLInputElement>(null);
   const csvRef = useRef<HTMLInputElement>(null);
 
@@ -23,10 +30,13 @@ export default function ExportImportBar() {
 
   const handleCSVChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+    if (file.name.endsWith(".xlsx")) {
+      await importFromXLSX(file);
+    } else {
       await importFromCSV(file);
-      e.target.value = "";
     }
+    e.target.value = "";
   };
 
   return (
@@ -56,7 +66,7 @@ export default function ExportImportBar() {
           loading={importing}
         >
           <FileSpreadsheet className="h-3.5 w-3.5" />
-          Import CSV
+          Import CSV/XLSX
         </Button>
         <input
           ref={fileRef}
@@ -68,16 +78,12 @@ export default function ExportImportBar() {
         <input
           ref={csvRef}
           type="file"
-          accept=".csv"
+          accept=".csv,.xlsx"
           onChange={handleCSVChange}
           className="hidden"
         />
       </div>
-      {error && (
-        <p className="text-xs text-red-600">
-          Import failed: {error}
-        </p>
-      )}
+      {error && <p className="text-xs text-red-600">Import failed: {error}</p>}
       {result && !error && (
         <p className="text-xs text-plum/60">
           {result.feedCount != null || result.pumpCount != null ? (

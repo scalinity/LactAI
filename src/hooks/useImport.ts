@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { importData } from "@/lib/json-export";
 import { parseFeedingPumpingCSV, importCSVSessions } from "@/lib/csv-import";
+import { parseXLSXFile } from "@/lib/xlsx-import";
 
 const MAX_CSV_SIZE_MB = 10;
 const MAX_CSV_SIZE_BYTES = MAX_CSV_SIZE_MB * 1024 * 1024;
@@ -24,7 +25,8 @@ export function useImport() {
       setResult(res);
       return res;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to import backup";
+      const msg =
+        err instanceof Error ? err.message : "Failed to import backup";
       setError(msg);
       return null;
     } finally {
@@ -36,7 +38,9 @@ export function useImport() {
     // Validate file size before processing
     if (file.size > MAX_CSV_SIZE_BYTES) {
       const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      setError(`File too large (${sizeMB}MB). Maximum size is ${MAX_CSV_SIZE_MB}MB. Please split into smaller files.`);
+      setError(
+        `File too large (${sizeMB}MB). Maximum size is ${MAX_CSV_SIZE_MB}MB. Please split into smaller files.`,
+      );
       return null;
     }
 
@@ -46,7 +50,7 @@ export function useImport() {
       // Read file with UTF-8 encoding validation
       const text = await file.text();
       // Remove BOM if present (UTF-8 BOM: EF BB BF)
-      const cleanText = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
+      const cleanText = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
       const { sessions, feedCount, pumpCount, errors } =
         parseFeedingPumpingCSV(cleanText);
 
@@ -59,15 +63,19 @@ export function useImport() {
         console.warn(`CSV import: ${errors.length} validation errors`);
       }
 
-      const { imported, skipped, skippedItems } = await importCSVSessions(sessions);
-      
+      const { imported, skipped, skippedItems } =
+        await importCSVSessions(sessions);
+
       if (skippedItems.length > 0) {
-        console.info(`Skipped ${skipped} duplicate entries:`, skippedItems.slice(0, 5));
+        console.info(
+          `Skipped ${skipped} duplicate entries:`,
+          skippedItems.slice(0, 5),
+        );
         if (skippedItems.length > 5) {
           console.info(`... and ${skippedItems.length - 5} more`);
         }
       }
-      
+
       const res = { imported, skipped, feedCount, pumpCount };
       setResult(res);
       return res;
@@ -80,5 +88,58 @@ export function useImport() {
     }
   }, []);
 
-  return { importFromFile, importFromCSV, importing, result, error };
+  const importFromXLSX = useCallback(async (file: File) => {
+    if (file.size > MAX_CSV_SIZE_BYTES) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      setError(
+        `File too large (${sizeMB}MB). Maximum size is ${MAX_CSV_SIZE_MB}MB.`,
+      );
+      return null;
+    }
+
+    setImporting(true);
+    setError(null);
+    try {
+      const { sessions, feedCount, pumpCount, errors } =
+        await parseXLSXFile(file);
+
+      if (sessions.length === 0 && errors.length > 0) {
+        setError(errors[0]);
+        return null;
+      }
+
+      if (errors.length > 0) {
+        console.warn(`XLSX import: ${errors.length} validation errors`);
+      }
+
+      const { imported, skipped, skippedItems } =
+        await importCSVSessions(sessions);
+
+      if (skippedItems.length > 0) {
+        console.info(
+          `Skipped ${skipped} duplicate entries:`,
+          skippedItems.slice(0, 5),
+        );
+      }
+
+      const res = { imported, skipped, feedCount, pumpCount };
+      setResult(res);
+      return res;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to import XLSX";
+      setError(msg);
+      return null;
+    } finally {
+      setImporting(false);
+    }
+  }, []);
+
+  return {
+    importFromFile,
+    importFromCSV,
+    importFromXLSX,
+    importing,
+    result,
+    error,
+  };
 }

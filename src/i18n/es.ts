@@ -44,6 +44,22 @@ const es: Translations = {
     aiInsights: "Análisis IA",
     installClaudiaFlow: "Instalar ClaudiaFlow",
     installDescription: "Añadir a la pantalla de inicio para acceso rápido",
+    dailyGoal: "Meta diaria",
+    goalReached: "Meta alcanzada!",
+    ofTarget: "de {{target}}",
+    sessions: "sesiones",
+    goalSettings: "Configurar meta",
+    goalType: "Seguir por",
+    goalTarget: "Objetivo",
+    volume: "Volumen",
+    quickLog: "Registro rápido",
+    quickLogSaved: "Registrado!",
+    log: "Registrar",
+    pumpSupply: "Producción",
+    perDay: "/día",
+    vsLastWeek: "vs semana ant.",
+    noChange: "Sin cambio",
+    notEnoughData: "Aún no hay suficientes datos",
   },
   log: {
     editSession: "Editar sesión",
@@ -100,6 +116,18 @@ const es: Translations = {
     aiInsights: "Análisis IA",
     allRange: "Todo",
   },
+  insights: {
+    title: "Análisis IA",
+    trends: "Tendencias",
+    patterns: "Patrones",
+    tips: "Sugerencias",
+    retry: "Reintentar",
+    refresh: "Actualizar análisis",
+    errorTimeout: "Tiempo de espera agotado. Prueba con un rango más corto.",
+    errorOffline: "Revisa tu conexión e intenta de nuevo.",
+    errorRateLimit: "Demasiadas solicitudes. Intenta de nuevo en un momento.",
+    errorGeneric: "Análisis no disponible temporalmente. Intenta de nuevo.",
+  },
   charts: {
     sevenDaySummary: "Resumen 7 días",
     total: "Total",
@@ -110,11 +138,9 @@ const es: Translations = {
     moreProductiveSide: "Lado más productivo:",
     sessionsPerDay: "sesiones/día",
     average: "Promedio",
-    dataCleanup: "Limpieza de datos",
-    unusualAmounts: "cantidades inusuales detectadas (prom es {{avg}})",
-    smallAmounts: "sesiones con cantidades muy pequeñas o cero",
-    noSide: "sesiones sin lado especificado",
-    reviewInHistory: "Revisar en historial",
+    weeklyBreakdown: "Esta semana",
+    bestDay: "Mejor dia",
+    dailyAvg: "Prom diario",
     morning: "mañana",
     afternoon: "tarde",
     evening: "noche",
@@ -235,6 +261,12 @@ const es: Translations = {
     completeDesc:
       "Comienza a registrar tu primera sesión y deja que ClaudiaFlow te ayude a comprender mejor tu experiencia.",
   },
+  timer: {
+    title: "Cronómetro",
+    tapToStart: "Toca para iniciar",
+    recording: "Grabando",
+    sinceLastPump: "Desde la última extracción:",
+  },
   errors: {
     somethingWentWrong: "¡Ups! Algo salió mal",
     unexpectedError:
@@ -252,6 +284,7 @@ const es: Translations = {
   promptStarters: {
     categories: {
       myData: "Mis datos",
+      visuals: "Visuales",
       babyCare: "Cuidado del bebé",
       feeding: "Extracción y alimentación",
       quickHelp: "Ayuda rápida",
@@ -311,6 +344,17 @@ const es: Translations = {
     qhQuickmeal: "Comida rápida",
     qhQuickmealFull:
       "Tengo pollo, arroz y 20 minutos. ¿Qué puedo hacer con una mano?",
+    visWeekly: "Infografía semanal",
+    visWeeklyFull:
+      "Crea una infografía visual de mis datos de extracción y alimentación de esta semana",
+    visToday: "Visual de hoy",
+    visTodayFull: "Genera un resumen visual de las sesiones de hoy",
+    visSides: "Izquierda vs derecha",
+    visSidesFull:
+      "Crea un visual comparando mi producción de extracción del lado izquierdo vs derecho",
+    visTrend: "Visual de tendencia",
+    visTrendFull:
+      "Haz una infografía mostrando la tendencia de mi producción de leche del último mes",
   },
 } as const;
 

@@ -20,3 +20,5 @@ MAX_TOKENS_INSIGHTS = "8192"
 MAX_DAILY_REQUESTS_PER_DEVICE = "100"
 APP_REFERER = "https://scalintiy.cloud"
 APP_TITLE = "ClaudiaFlow"
+
+# OPENAI_API_KEY is set as a secret via: wrangler secret put OPENAI_API_KEY

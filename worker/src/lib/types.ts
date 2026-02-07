@@ -2,6 +2,7 @@ export type Env = {
   IMAGE_CACHE: KVNamespace;
   OPENROUTER_API_KEY: string;
   OPENROUTER_BASE_URL: string;
+  OPENAI_API_KEY: string;
   VISION_MODEL: string;
   CHAT_MODEL: string;
   TITLE_MODEL?: string;

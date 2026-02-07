@@ -6,7 +6,6 @@ import {
   computeDurationStats,
   computeSideVolumes,
   computeSessionRegularity,
-  computeWeeklyTotals,
 } from "./aggregation";
 import { convertAmount, formatAmount } from "./units";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
@@ -19,7 +18,7 @@ export interface ChatDataContext {
   thread_summaries?: string;
 }
 
-const MAX_SUMMARY_CHARS = 8000;
+const MAX_SUMMARY_CHARS = 60000;
 const MAX_THREAD_SUMMARIES_CHARS = 1000;
 
 export async function buildChatContext(
@@ -65,6 +64,26 @@ function normalizeSessions(sessions: Session[]): Session[] {
     }
   }
   return result;
+}
+
+/** Format a single session as a compact one-line string. */
+function formatSessionLine(s: Session, fmt: (ml: number) => string): string {
+  const parts = [
+    format(s.timestamp, "h:mm a"),
+    fmt(s.amount_ml),
+    s.session_type ?? "feeding",
+  ];
+  if (s.amount_left_ml != null || s.amount_right_ml != null) {
+    const lr: string[] = [];
+    if (s.amount_left_ml != null) lr.push(`L ${fmt(s.amount_left_ml)}`);
+    if (s.amount_right_ml != null) lr.push(`R ${fmt(s.amount_right_ml)}`);
+    parts.push(lr.join(" "));
+  } else if (s.side && s.side !== "unknown") {
+    parts.push(s.side);
+  }
+  if (s.duration_min) parts.push(`${s.duration_min}min`);
+  if (s.notes) parts.push(`"${s.notes.slice(0, 80)}"`);
+  return parts.join(" | ");
 }
 
 async function buildChatContextInner(
@@ -154,11 +173,6 @@ async function buildChatContextInner(
     return t >= todayStart && t <= todayEndMs;
   });
   const last7d = last30d.filter((s) => s.timestamp.getTime() >= sevenDaysAgoMs);
-  const weeks2to4 = last30d.filter((s) => {
-    const t = s.timestamp.getTime();
-    return t < sevenDaysAgoMs && t >= thirtyDaysAgo.getTime();
-  });
-
   // Split sessions by type to avoid double-counting milk that is
   // pumped then bottle-fed. Pump sessions = supply produced,
   // feed sessions = intake consumed.
@@ -172,12 +186,8 @@ async function buildChatContextInner(
   const todayPumpStats = computeSessionStats(todayPump);
   const todayFeedStats = computeSessionStats(todayFeed);
 
-  const weekDuration = computeDurationStats(last7d);
-  const weekSideVols = computeSideVolumes(last7d);
   const weekRegularity = computeSessionRegularity(last7d);
-  const dailyTotals7d = computeDailyTotals(last7d);
   const dailyTotals30d = computeDailyTotals(last30d);
-  const weeklyTotals2to4 = computeWeeklyTotals(weeks2to4);
   const allTimeSessions = [...olderSessions, ...last30d];
   const allTimePump = allTimeSessions.filter(
     (s) => s.session_type === "pumping",
@@ -190,16 +200,6 @@ async function buildChatContextInner(
   // Compute monthly totals from ALL sessions so months spanning the
   // 30-day boundary aren't split, and the supply trend includes recent data
   const monthlyTotals = computeMonthlyTotals(allTimeSessions);
-
-  // Time-of-day distribution (last 7 days)
-  const timeSlots = { night: 0, morning: 0, afternoon: 0, evening: 0 };
-  for (const s of last7d) {
-    const h = s.timestamp.getHours();
-    if (h < 6) timeSlots.night++;
-    else if (h < 12) timeSlots.morning++;
-    else if (h < 18) timeSlots.afternoon++;
-    else timeSlots.evening++;
-  }
 
   const u = preferredUnit;
   const fmt = (ml: number) => {
@@ -257,24 +257,12 @@ async function buildChatContextInner(
         `Sides: ${todaySideVols.left_count}L ${todaySideVols.right_count}R ${todaySideVols.both_count}B`,
       );
     }
-    // List today's individual sessions (cap at 10 to preserve budget)
+    // List today's individual sessions
     const todaySorted = [...todaySessions].sort(
       (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
     );
-    const todayToShow = todaySorted.slice(0, 10);
-    for (const s of todayToShow) {
-      const parts = [
-        format(s.timestamp, "h:mm a"),
-        fmt(s.amount_ml),
-        s.session_type ?? "feeding",
-      ];
-      if (s.side && s.side !== "unknown") parts.push(s.side);
-      if (s.duration_min) parts.push(`${s.duration_min}min`);
-      if (s.notes) parts.push(`"${s.notes.slice(0, 80)}"`);
-      lines.push(`- ${parts.join(" | ")}`);
-    }
-    if (todaySorted.length > 10) {
-      lines.push(`...and ${todaySorted.length - 10} more sessions`);
+    for (const s of todaySorted) {
+      lines.push(`- ${formatSessionLine(s, fmt)}`);
     }
   }
 
@@ -299,57 +287,82 @@ async function buildChatContextInner(
         `Note: Pump and feed totals may overlap when pumped milk is later bottle-fed.`,
       );
     }
-    lines.push(
-      `Time: ${timeSlots.morning} morn, ${timeSlots.afternoon} aftn, ${timeSlots.evening} eve, ${timeSlots.night} night`,
-    );
+    // Side breakdown for 7-day pump sessions
+    const sideVols7d = computeSideVolumes(pumpSessions7d);
     if (
-      weekSideVols.left_count +
-        weekSideVols.right_count +
-        weekSideVols.both_count >
+      sideVols7d.left_count + sideVols7d.right_count + sideVols7d.both_count >
       0
     ) {
-      lines.push(
-        `Sides: ${weekSideVols.left_count}L ${weekSideVols.right_count}R ${weekSideVols.both_count}B`,
-      );
-    }
-    if (weekDuration.count_with_duration > 0) {
-      lines.push(
-        `Duration: avg ${weekDuration.avg_min}min (range ${weekDuration.min_min}-${weekDuration.max_min}min, ${weekDuration.count_with_duration}/${weekDuration.total_count} recorded)`,
-      );
+      const sideParts: string[] = [];
+      if (sideVols7d.left_count > 0)
+        sideParts.push(
+          `Left: ${fmt(sideVols7d.left_total_ml)} (${sideVols7d.left_count} sessions, avg ${fmt(sideVols7d.left_avg_ml)})`,
+        );
+      if (sideVols7d.right_count > 0)
+        sideParts.push(
+          `Right: ${fmt(sideVols7d.right_total_ml)} (${sideVols7d.right_count} sessions, avg ${fmt(sideVols7d.right_avg_ml)})`,
+        );
+      if (sideVols7d.both_count > 0)
+        sideParts.push(
+          `Both: ${fmt(sideVols7d.both_total_ml)} (${sideVols7d.both_count} sessions)`,
+        );
+      lines.push(`Side breakdown (pump): ${sideParts.join(" | ")}`);
     }
     if (weekRegularity.avg_gap_hours > 0) {
       lines.push(
         `Regularity: avg ${weekRegularity.avg_gap_hours}h between sessions, ~${weekRegularity.typical_sessions_per_day}/day`,
       );
     }
-    if (weekSideVols.left_avg_ml > 0 || weekSideVols.right_avg_ml > 0) {
+  }
+
+  // --- Complete Session Log (all sessions, grouped by day) ---
+  const allHistorical = allTimeSessions.filter((s) => {
+    const t = s.timestamp.getTime();
+    return t < todayStart;
+  });
+  if (allHistorical.length > 0) {
+    lines.push("\n### Complete Session Log");
+
+    // Group by calendar day
+    const byDay = new Map<string, Session[]>();
+    for (const s of allHistorical) {
+      const key = format(s.timestamp, "yyyy-MM-dd");
+      const arr = byDay.get(key);
+      if (arr) arr.push(s);
+      else byDay.set(key, [s]);
+    }
+
+    // Sort days newest-first
+    const sortedDays = [...byDay.entries()].sort((a, b) =>
+      b[0].localeCompare(a[0]),
+    );
+
+    for (const [, daySessions] of sortedDays) {
+      const dayDate = startOfDay(daySessions[0].timestamp);
+      const dayPump = daySessions.filter((s) => s.session_type === "pumping");
+      const dayFeed = daySessions.filter((s) => s.session_type !== "pumping");
+      const dayPumpTotal = dayPump.reduce((s, v) => s + v.amount_ml, 0);
+      const dayFeedTotal = dayFeed.reduce((s, v) => s + v.amount_ml, 0);
+
+      // Day header
+      const headerParts: string[] = [];
+      if (dayPump.length > 0) headerParts.push(`${dayPump.length} pump`);
+      if (dayFeed.length > 0) headerParts.push(`${dayFeed.length} feed`);
+      const totalsParts: string[] = [];
+      if (dayPumpTotal > 0) totalsParts.push(`pumped ${fmt(dayPumpTotal)}`);
+      if (dayFeedTotal > 0) totalsParts.push(`fed ${fmt(dayFeedTotal)}`);
+
       lines.push(
-        `Side volumes: L avg ${fmt(weekSideVols.left_avg_ml)}, R avg ${fmt(weekSideVols.right_avg_ml)}`,
+        `\n#### ${format(dayDate, "MMM d (EEE)")} — ${headerParts.join(", ")}${totalsParts.length > 0 ? ` | ${totalsParts.join(", ")}` : ""}`,
       );
-    }
-  }
 
-  // --- Daily Totals (7d) ---
-  if (dailyTotals7d.length > 0) {
-    lines.push("\n### Daily Totals (7d)");
-    for (const d of dailyTotals7d) {
-      const parts: string[] = [`${d.date}:`];
-      if (d.pump_ml > 0) parts.push(`pumped ${fmt(d.pump_ml)}`);
-      if (d.feed_ml > 0) parts.push(`fed ${fmt(d.feed_ml)}`);
-      parts.push(`(${d.count} sessions)`);
-      lines.push(parts.join(" "));
-    }
-  }
-
-  // --- Weeks 2-4 ---
-  if (weeklyTotals2to4.length > 0) {
-    lines.push("\n### Weeks 2-4");
-    for (const w of weeklyTotals2to4) {
-      const parts: string[] = [`W ${w.weekStart}:`];
-      if (w.pump_ml > 0) parts.push(`pumped ${fmt(w.pump_ml)}`);
-      if (w.feed_ml > 0) parts.push(`fed ${fmt(w.feed_ml)}`);
-      parts.push(`${w.count} sessions (${w.days_with_data}d)`);
-      lines.push(parts.join(" "));
+      // All individual sessions (chronological)
+      const sorted = [...daySessions].sort(
+        (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
+      );
+      for (const s of sorted) {
+        lines.push(`- ${formatSessionLine(s, fmt)}`);
+      }
     }
   }
 
@@ -425,6 +438,29 @@ async function buildChatContextInner(
       lines.push(
         `Total fed: ${fmt(allTimeFeedStats.total)} (${allTimeFeedStats.count} sessions)`,
       );
+    }
+    // All-time side breakdown for pump sessions
+    const allTimeSideVols = computeSideVolumes(allTimePump);
+    if (
+      allTimeSideVols.left_count +
+        allTimeSideVols.right_count +
+        allTimeSideVols.both_count >
+      0
+    ) {
+      const sideParts: string[] = [];
+      if (allTimeSideVols.left_count > 0)
+        sideParts.push(
+          `Left: ${fmt(allTimeSideVols.left_total_ml)} (${allTimeSideVols.left_count} sessions, avg ${fmt(allTimeSideVols.left_avg_ml)})`,
+        );
+      if (allTimeSideVols.right_count > 0)
+        sideParts.push(
+          `Right: ${fmt(allTimeSideVols.right_total_ml)} (${allTimeSideVols.right_count} sessions, avg ${fmt(allTimeSideVols.right_avg_ml)})`,
+        );
+      if (allTimeSideVols.both_count > 0)
+        sideParts.push(
+          `Both: ${fmt(allTimeSideVols.both_total_ml)} (${allTimeSideVols.both_count} sessions)`,
+        );
+      lines.push(`Side breakdown (pump): ${sideParts.join(" | ")}`);
     }
     lines.push(`Days logged: ${totalDaysLogged}`);
     if (totalDaysLogged > 1) {

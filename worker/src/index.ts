@@ -9,6 +9,7 @@ import chatApp from "./routes/chat";
 import titleApp from "./routes/title";
 import insightsApp from "./routes/insights";
 import statusApp from "./routes/status";
+import imageGenerateApp from "./routes/image-generate";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -81,6 +82,7 @@ app.route("/api/ai/chat/title", titleApp);
 app.route("/api/ai/chat", chatApp);
 app.route("/api/ai/insights", insightsApp);
 app.route("/api/ai/key-status", statusApp);
+app.route("/api/ai/image-generate", imageGenerateApp);
 
 // 404
 app.notFound((c) =>

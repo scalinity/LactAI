@@ -52,7 +52,7 @@ export const VisionEntrySchema = z.object({
 });
 
 const ChatMessageContentPart = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("text"), text: z.string().min(1).max(2000) }),
+  z.object({ type: z.literal("text"), text: z.string().min(1).max(10000) }),
   z.object({
     type: z.literal("image_url"),
     image_url: z.object({
@@ -74,7 +74,7 @@ export const ChatRequestSchema = z.object({
       z.object({
         role: z.enum(["user", "assistant"]),
         content: z.union([
-          z.string().min(1).max(2000),
+          z.string().min(1).max(10000),
           z.array(ChatMessageContentPart).min(1),
         ]),
       }),
@@ -85,7 +85,7 @@ export const ChatRequestSchema = z.object({
     .object({
       baby_age_weeks: z.number().min(0).max(260).optional(),
       expression_method: z.enum(["pump", "hand", "both"]).optional(),
-      data_summary: z.string().max(8000).optional(),
+      data_summary: z.string().max(60000).optional(),
       session_count: z.number().min(0).optional(),
       preferred_unit: z.enum(["ml", "oz"]).optional(),
       thread_summaries: z.string().max(1000).optional(),
@@ -94,8 +94,14 @@ export const ChatRequestSchema = z.object({
 });
 
 export const TitleRequestSchema = z.object({
-  user_message: z.string().min(1).max(2000),
-  assistant_message: z.string().min(1).max(2000),
+  user_message: z.string().min(1).max(10000),
+  assistant_message: z.string().min(1).max(10000),
+});
+
+export const ImageGenerateRequestSchema = z.object({
+  prompt: z.string().min(1).max(5000),
+  data_summary: z.string().max(60000).optional(),
+  preferred_unit: z.enum(["ml", "oz"]).optional(),
 });
 
 export const InsightsRequestSchema = z.object({
@@ -105,10 +111,18 @@ export const InsightsRequestSchema = z.object({
         timestamp_local: z.string(),
         amount: z.number().min(0),
         unit: z.string(),
+        session_type: z.enum(["feeding", "pumping"]).optional(),
+        side: z.enum(["left", "right", "both", "unknown"]).optional(),
+        duration_min: z.number().min(0).optional(),
+        amount_left_ml: z.number().min(0).optional(),
+        amount_right_ml: z.number().min(0).optional(),
       }),
     )
     .min(2)
     .max(500),
-  period: z.enum(["7d", "14d", "30d", "all"]).optional().default("7d"),
+  period: z
+    .enum(["7d", "14d", "30d", "90d", "180d", "365d", "all"])
+    .optional()
+    .default("7d"),
   questions: z.array(z.string().max(200)).max(3).optional(),
 });

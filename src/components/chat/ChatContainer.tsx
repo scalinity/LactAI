@@ -75,7 +75,7 @@ export default function ChatContainer() {
         )}
         {isStreaming && streamingContent && (
           <div className="flex flex-col gap-1 items-start">
-            <div className="max-w-[92%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap bg-surface text-plum shadow-sm border border-plum/5 rounded-bl-md">
+            <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap bg-surface text-plum shadow-sm border border-plum/5 rounded-bl-md">
               {streamingContent}
               <span className="inline-block w-1.5 h-4 ml-0.5 bg-rose-primary/60 animate-pulse rounded-sm align-text-bottom" />
             </div>

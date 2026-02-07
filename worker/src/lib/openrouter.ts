@@ -14,6 +14,7 @@ interface OpenRouterRequest {
   temperature?: number;
   response_format?: { type: "json_object" };
   stream?: boolean;
+  reasoning?: { enabled: boolean };
 }
 
 interface OpenRouterResponse {

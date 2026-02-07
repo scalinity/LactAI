@@ -33,7 +33,12 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const { preferredUnit, setPreferredUnit, locale, setLocale } = useAppStore();
   const { exportCSV, exportJSON } = useExport();
-  const { importFromFile, importing, result: importResult } = useImport();
+  const {
+    importFromFile,
+    importFromXLSX,
+    importing,
+    result: importResult,
+  } = useImport();
   const [deleteStep, setDeleteStep] = useState(0);
   const [deleting, setDeleting] = useState(false);
   const { mode, setMode } = useThemeStore();
@@ -84,15 +89,18 @@ export default function SettingsPage() {
   const handleImport = useCallback(async () => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".json";
+    input.accept = ".json,.xlsx";
     input.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
+      if (!file) return;
+      if (file.name.endsWith(".xlsx")) {
+        await importFromXLSX(file);
+      } else {
         await importFromFile(file);
       }
     };
     input.click();
-  }, [importFromFile]);
+  }, [importFromFile, importFromXLSX]);
 
   const handleDeleteImports = useCallback(async () => {
     if (deleteImportsStep < 2) {

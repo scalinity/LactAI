@@ -36,41 +36,46 @@ export default memo(function DayGroup({
           <h3 className="text-sm font-bold text-plum/70">
             {formatDayHeader(date)}
           </h3>
-          <span className="h-1 w-1 rounded-full bg-plum/20" />
-          <span className="text-sm font-semibold text-rose-primary">
-            {formatAmount(displayTotal, preferredUnit)}
-          </span>
+          {hasTypedData && (
+            <>
+              <span className="h-1 w-1 rounded-full bg-plum/20" />
+              {feedTotalMl! > 0 && (
+                <span className="text-xs font-semibold text-rose-dark/70">
+                  {t("history.feedLabel")}{" "}
+                  {formatAmount(
+                    preferredUnit === "oz"
+                      ? mlToOz(feedTotalMl!)
+                      : Math.round(feedTotalMl!),
+                    preferredUnit,
+                  )}
+                </span>
+              )}
+              {feedTotalMl! > 0 && pumpTotalMl! > 0 && (
+                <span className="text-xs text-plum/20">|</span>
+              )}
+              {pumpTotalMl! > 0 && (
+                <span className="text-xs font-semibold text-sage-dark/70">
+                  {t("history.pumpLabel")}{" "}
+                  {formatAmount(
+                    preferredUnit === "oz"
+                      ? mlToOz(pumpTotalMl!)
+                      : Math.round(pumpTotalMl!),
+                    preferredUnit,
+                  )}
+                </span>
+              )}
+            </>
+          )}
+          {!hasTypedData && (
+            <>
+              <span className="h-1 w-1 rounded-full bg-plum/20" />
+              <span className="text-xs font-semibold text-rose-primary">
+                {formatAmount(displayTotal, preferredUnit)}
+              </span>
+            </>
+          )}
           <div className="flex-1 border-b border-plum/[0.06]" />
         </div>
-        {hasTypedData && (
-          <div className="flex items-center gap-2 pl-0.5">
-            {feedTotalMl! > 0 && (
-              <span className="text-[10px] font-semibold text-rose-dark/70">
-                {t("history.feedLabel")}{" "}
-                {formatAmount(
-                  preferredUnit === "oz"
-                    ? mlToOz(feedTotalMl!)
-                    : Math.round(feedTotalMl!),
-                  preferredUnit,
-                )}
-              </span>
-            )}
-            {feedTotalMl! > 0 && pumpTotalMl! > 0 && (
-              <span className="text-[10px] text-plum/20">|</span>
-            )}
-            {pumpTotalMl! > 0 && (
-              <span className="text-[10px] font-semibold text-sage-dark/70">
-                {t("history.pumpLabel")}{" "}
-                {formatAmount(
-                  preferredUnit === "oz"
-                    ? mlToOz(pumpTotalMl!)
-                    : Math.round(pumpTotalMl!),
-                  preferredUnit,
-                )}
-              </span>
-            )}
-          </div>
-        )}
       </div>
       <div className="space-y-1.5">{children}</div>
     </div>

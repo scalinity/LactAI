@@ -32,9 +32,14 @@ export const handlers = [
   // Insights endpoint
   http.post(`${API_BASE}/api/ai/insights`, () => {
     return HttpResponse.json({
-      summary: "Your output has been steady over the past week.",
-      trends: [],
-      suggestions: [],
+      success: true,
+      data: {
+        summary: "Your output has been steady over the past week.",
+        trends: [],
+        patterns: [],
+        tips: [],
+      },
+      request_id: "mock-request-id",
     });
   }),
 

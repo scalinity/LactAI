@@ -88,6 +88,22 @@ const starterI18n: Record<
     label: "promptStarters.scRelax",
     full: "promptStarters.scRelaxFull",
   },
+  "vis-weekly": {
+    label: "promptStarters.visWeekly",
+    full: "promptStarters.visWeeklyFull",
+  },
+  "vis-today": {
+    label: "promptStarters.visToday",
+    full: "promptStarters.visTodayFull",
+  },
+  "vis-sides": {
+    label: "promptStarters.visSides",
+    full: "promptStarters.visSidesFull",
+  },
+  "vis-trend": {
+    label: "promptStarters.visTrend",
+    full: "promptStarters.visTrendFull",
+  },
   "bc-checkup": {
     label: "promptStarters.bcCheckup",
     full: "promptStarters.bcCheckupFull",
@@ -108,6 +124,7 @@ const starterI18n: Record<
 
 const categoryI18n: Record<PromptCategory, TranslationKey> = {
   "my-data": "promptStarters.categories.myData",
+  visuals: "promptStarters.categories.visuals",
   "baby-care": "promptStarters.categories.babyCare",
   feeding: "promptStarters.categories.feeding",
   "quick-help": "promptStarters.categories.quickHelp",

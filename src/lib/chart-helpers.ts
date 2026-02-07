@@ -1033,17 +1033,27 @@ export function computeVisibleStats(
     };
   }
 
-  const amounts = visible.map((s) => convertVal(s.amount_ml, unit));
+  // When both pump and feed data exist, use pump sessions only to avoid
+  // double-counting milk that is pumped then bottle-fed.
+  const hasBothTypes =
+    visible.some((s) => s.session_type === "pumping") &&
+    visible.some((s) => s.session_type !== "pumping");
+  const counted = hasBothTypes
+    ? visible.filter((s) => s.session_type === "pumping")
+    : visible;
+  const amounts = counted.map((s) => convertVal(s.amount_ml, unit));
   const total = amounts.reduce((a, b) => a + b, 0);
 
   return {
-    count: visible.length,
+    count: counted.length,
     total: Math.round(total),
-    avg: Math.round(total / visible.length),
-    min: Math.round(safeMin(amounts)),
-    max: Math.round(safeMax(amounts)),
-    feedCount: visible.filter((s) => s.session_type !== "pumping").length,
-    pumpCount: visible.filter((s) => s.session_type === "pumping").length,
+    avg: amounts.length > 0 ? Math.round(total / amounts.length) : 0,
+    min: amounts.length > 0 ? Math.round(safeMin(amounts)) : 0,
+    max: amounts.length > 0 ? Math.round(safeMax(amounts)) : 0,
+    feedCount: hasBothTypes
+      ? 0
+      : visible.filter((s) => s.session_type !== "pumping").length,
+    pumpCount: counted.filter((s) => s.session_type === "pumping").length,
   };
 }
 

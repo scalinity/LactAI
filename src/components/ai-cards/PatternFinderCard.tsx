@@ -47,18 +47,30 @@ export default function PatternFinderCard() {
   const BestIcon = TimeIcon[bestTimeKey];
   const bestAvg = bestTime[1].total / bestTime[1].count;
 
-  // Find most productive side
-  const bySide: Record<string, { total: number; count: number }> = {};
+  // Find most productive side using L/R breakdown data
+  const bySide: Record<"left" | "right", { total: number; count: number }> = {
+    left: { total: 0, count: 0 },
+    right: { total: 0, count: 0 },
+  };
   for (const s of sessions) {
-    const side = s.side || "unspecified";
-    if (!bySide[side]) bySide[side] = { total: 0, count: 0 };
-    bySide[side].total += s.amount_ml;
-    bySide[side].count += 1;
+    if (s.amount_left_ml != null && s.amount_right_ml != null) {
+      bySide.left.total += s.amount_left_ml;
+      bySide.left.count += 1;
+      bySide.right.total += s.amount_right_ml;
+      bySide.right.count += 1;
+    } else if (s.side === "left" || s.side === "right") {
+      bySide[s.side].total += s.amount_ml;
+      bySide[s.side].count += 1;
+    }
   }
 
-  const bestSide = Object.entries(bySide)
-    .filter(([k]) => k !== "unspecified")
-    .sort(([, a], [, b]) => b.total / b.count - a.total / a.count)[0];
+  const hasSideData = bySide.left.count > 0 && bySide.right.count > 0;
+  const bestSide = hasSideData
+    ? bySide.left.total / bySide.left.count >=
+      bySide.right.total / bySide.right.count
+      ? (["left", bySide.left] as const)
+      : (["right", bySide.right] as const)
+    : null;
 
   // Average sessions per day
   const daySet = new Set(

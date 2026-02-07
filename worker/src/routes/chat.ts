@@ -59,11 +59,13 @@ chatApp.post("/", async (c) => {
     : c.env.CHAT_MODEL;
 
   try {
+    const useReasoning = model.startsWith("x-ai/");
     const upstreamResponse = await client.chatCompletionStream({
       model,
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       max_tokens: parseInt(c.env.MAX_TOKENS_CHAT, 10),
       temperature: 0.7,
+      ...(useReasoning && { reasoning: { enabled: true } }),
     });
 
     const upstreamBody = upstreamResponse.body;

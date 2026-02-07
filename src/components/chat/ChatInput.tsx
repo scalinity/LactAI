@@ -193,6 +193,9 @@ export default function ChatInput({
 
         <textarea
           ref={textareaRef}
+          id="chat-message-input"
+          name="message"
+          aria-label="Chat message"
           value={text}
           onChange={(e) => {
             setText(e.target.value);

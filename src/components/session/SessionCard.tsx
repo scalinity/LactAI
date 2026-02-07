@@ -37,6 +37,10 @@ export default memo(function SessionCard({
   const style = session.session_type
     ? TYPE_STYLES[session.session_type]
     : TYPE_STYLES.feeding;
+  const hasLRBreakdown =
+    session.session_type === "pumping" &&
+    session.amount_left_ml != null &&
+    session.amount_right_ml != null;
 
   return (
     <div
@@ -75,30 +79,37 @@ export default memo(function SessionCard({
                   : t("session.feed")}
               </Badge>
             )}
-            {session.side && session.side !== "unknown" && (
-              <Badge>{session.side}</Badge>
-            )}
-            {session.source !== "manual" && (
+            {session.side &&
+              session.side !== "unknown" &&
+              !(session.side === "both" && hasLRBreakdown) && (
+                <Badge>{session.side}</Badge>
+              )}
+            {session.source !== "manual" && session.source !== "imported" && (
               <Badge variant="warning">{session.source}</Badge>
             )}
           </div>
         </div>
-        {session.session_type === "pumping" &&
-          session.amount_left_ml != null &&
-          session.amount_right_ml != null && (
-            <span className="text-[10px] text-plum/40 pl-0.5">
-              L:{" "}
+        {hasLRBreakdown && (
+          <div className="flex items-center gap-2 pl-0.5 mt-0.5">
+            <span className="inline-flex items-center gap-1 text-xs text-sage-dark font-medium">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-sage-dark/60" />
+              L{" "}
               {formatAmount(
-                convertAmount(session.amount_left_ml, "ml", preferredUnit),
-                preferredUnit,
-              )}
-              {"  "}R:{" "}
-              {formatAmount(
-                convertAmount(session.amount_right_ml, "ml", preferredUnit),
+                convertAmount(session.amount_left_ml!, "ml", preferredUnit),
                 preferredUnit,
               )}
             </span>
-          )}
+            <span className="text-plum/20">|</span>
+            <span className="inline-flex items-center gap-1 text-xs text-sage-dark font-medium">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-sage-dark/60" />
+              R{" "}
+              {formatAmount(
+                convertAmount(session.amount_right_ml!, "ml", preferredUnit),
+                preferredUnit,
+              )}
+            </span>
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-2">
         <span className="text-xs text-plum/35 font-medium">

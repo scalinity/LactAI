@@ -1,6 +1,8 @@
-import type { ChatMessage } from "@/types/chat";
+import { useMemo } from "react";
+import type { ChatMessage, ChatImageData } from "@/types/chat";
 import { formatTime } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/i18n";
 import CautionFlag from "./CautionFlag";
 
 function parseInline(text: string, keyPrefix: number): React.ReactNode[] {
@@ -55,9 +57,42 @@ interface MessageBubbleProps {
   message: ChatMessage;
 }
 
+function GeneratedImage({ image }: { image: ChatImageData }) {
+  const { t } = useTranslation();
+  const src = useMemo(
+    () => `data:${image.mime_type};base64,${image.base64}`,
+    [image.mime_type, image.base64],
+  );
+
+  const handleDownload = () => {
+    const link = document.createElement("a");
+    link.href = src;
+    link.download = `claudiaflow-${Date.now()}.png`;
+    link.click();
+  };
+
+  return (
+    <div className="mt-2 relative group">
+      <img
+        src={src}
+        alt="Generated infographic"
+        className="w-full max-w-md rounded-xl object-contain"
+      />
+      <button
+        type="button"
+        onClick={handleDownload}
+        className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-plum/70 text-white text-xs px-2.5 py-1.5 rounded-lg backdrop-blur-sm"
+      >
+        {t("common.save")}
+      </button>
+    </div>
+  );
+}
+
 export default function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const hasCaution = message.flags?.includes("medical_caution");
+  const isGeneratedImage = !isUser && message.image;
 
   return (
     <div
@@ -69,13 +104,14 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
       {hasCaution && <CautionFlag />}
       <div
         className={cn(
-          "max-w-[92%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+          "max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
           isUser
             ? "bg-rose-primary/15 text-plum rounded-br-md"
             : "bg-surface text-plum shadow-sm border border-plum/5 rounded-bl-md",
         )}
       >
-        {message.image && (
+        {/* User-attached image: show above text */}
+        {isUser && message.image && (
           <img
             src={`data:${message.image.mime_type};base64,${message.image.base64}`}
             alt="Shared image"
@@ -87,6 +123,8 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             {parseMarkdown(message.content)}
           </div>
         )}
+        {/* AI-generated image: show below text with download */}
+        {isGeneratedImage && <GeneratedImage image={message.image!} />}
       </div>
       <span className="px-1 text-[10px] text-plum/30">
         {formatTime(message.created_at)}

@@ -71,6 +71,7 @@ export default defineConfig({
           "vendor-echarts": ["echarts", "echarts-for-react"],
           "vendor-dexie": ["dexie", "dexie-react-hooks"],
           "vendor-date": ["date-fns"],
+          "vendor-xlsx": ["xlsx"],
         },
       },
     },

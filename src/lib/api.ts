@@ -1,17 +1,31 @@
 import { API_BASE_URL } from "./constants";
 import type { VisionExtractResponse } from "@/types/upload";
 
+export interface InsightTrend {
+  metric: string;
+  direction: "increasing" | "decreasing" | "stable" | "variable";
+  description: string;
+}
+
+export interface InsightPattern {
+  type: string;
+  description: string;
+}
+
+export interface InsightTip {
+  tip: string;
+  rationale: string;
+}
+
 export interface InsightsResponse {
   summary: string;
-  trends: Array<{
-    label: string;
-    direction: "up" | "down" | "stable";
-    detail: string;
-  }>;
-  tips: string[];
+  trends: InsightTrend[];
+  patterns: InsightPattern[];
+  tips: InsightTip[];
 }
 
 const API_TIMEOUT_MS = 30_000;
+const INSIGHTS_TIMEOUT_MS = 45_000;
 const STREAM_TIMEOUT_MS = 60_000;
 const MAX_STREAM_LENGTH = 1_000_000;
 const SSE_DATA_PREFIX = "data: ";
@@ -62,8 +76,18 @@ function getDeviceId(): string {
   return id;
 }
 
-async function apiRequest<T>(path: string, body: unknown): Promise<T> {
+async function apiRequest<T>(
+  path: string,
+  body: unknown,
+  timeoutMs = API_TIMEOUT_MS,
+  signal?: AbortSignal,
+): Promise<T> {
   assertOnline();
+
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  const combinedSignal = signal
+    ? AbortSignal.any([signal, timeoutSignal])
+    : timeoutSignal;
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
@@ -72,7 +96,7 @@ async function apiRequest<T>(path: string, body: unknown): Promise<T> {
       "X-Device-ID": getDeviceId(),
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(API_TIMEOUT_MS),
+    signal: combinedSignal,
   });
 
   if (!response.ok) {
@@ -220,9 +244,68 @@ export async function generateChatTitle(
   return result.title;
 }
 
+export async function generateImage(
+  prompt: string,
+  context?: {
+    data_summary?: string;
+    preferred_unit?: "ml" | "oz";
+  },
+  signal?: AbortSignal,
+): Promise<{ image_base64: string; mime_type: string }> {
+  return apiRequest<{ image_base64: string; mime_type: string }>(
+    "/api/ai/image-generate",
+    {
+      prompt,
+      data_summary: context?.data_summary,
+      preferred_unit: context?.preferred_unit,
+    },
+    60_000, // Image generation takes longer
+    signal,
+  );
+}
+
+export interface InsightsEntry {
+  timestamp_local: string;
+  amount: number;
+  unit: string;
+  session_type?: "feeding" | "pumping";
+  side?: string;
+  duration_min?: number;
+  amount_left_ml?: number;
+  amount_right_ml?: number;
+}
+
 export async function getInsights(
-  entries: Array<{ timestamp_local: string; amount: number; unit: string }>,
-  period?: string,
+  entries: InsightsEntry[],
+  period: string,
+  signal?: AbortSignal,
 ): Promise<InsightsResponse> {
-  return apiRequest<InsightsResponse>("/api/ai/insights", { entries, period });
+  assertOnline();
+
+  const timeoutSignal = AbortSignal.timeout(INSIGHTS_TIMEOUT_MS);
+  const combinedSignal = signal
+    ? AbortSignal.any([signal, timeoutSignal])
+    : timeoutSignal;
+
+  const response = await fetch(`${API_BASE_URL}/api/ai/insights`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Device-ID": getDeviceId(),
+    },
+    body: JSON.stringify({ entries, period }),
+    signal: combinedSignal,
+  });
+
+  if (!response.ok) {
+    await throwApiError(response);
+  }
+
+  let result: Record<string, unknown>;
+  try {
+    result = await response.json();
+  } catch {
+    throw new Error("Invalid response from server");
+  }
+  return result.data as InsightsResponse;
 }

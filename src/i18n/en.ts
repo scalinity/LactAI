@@ -25,9 +25,9 @@ const en = {
     chat: "Chat",
   },
   home: {
-    greetingMorning: "Good morning",
-    greetingAfternoon: "Good afternoon",
-    greetingEvening: "Good evening",
+    greetingMorning: "Good morning, Claudia",
+    greetingAfternoon: "Good afternoon, Claudia",
+    greetingEvening: "Good evening, Claudia",
     welcomeBack: "Welcome back to ClaudiaFlow",
     feedings: "Feedings",
     pumping: "Pumping",
@@ -42,6 +42,22 @@ const en = {
     aiInsights: "AI Insights",
     installClaudiaFlow: "Install ClaudiaFlow",
     installDescription: "Add to your home screen for quick access",
+    dailyGoal: "Daily Goal",
+    goalReached: "Goal reached!",
+    ofTarget: "of {{target}}",
+    sessions: "sessions",
+    goalSettings: "Goal Settings",
+    goalType: "Track by",
+    goalTarget: "Target",
+    volume: "Volume",
+    quickLog: "Quick Log",
+    quickLogSaved: "Logged!",
+    log: "Log",
+    pumpSupply: "Pump Supply",
+    perDay: "/day",
+    vsLastWeek: "vs last week",
+    noChange: "No change",
+    notEnoughData: "Not enough data yet",
   },
   log: {
     editSession: "Edit Session",
@@ -98,6 +114,18 @@ const en = {
     aiInsights: "AI Insights",
     allRange: "All",
   },
+  insights: {
+    title: "AI Analysis",
+    trends: "Trends",
+    patterns: "Patterns",
+    tips: "Suggestions",
+    retry: "Retry",
+    refresh: "Refresh insights",
+    errorTimeout: "Request timed out. Try a shorter time range.",
+    errorOffline: "Check your connection and try again.",
+    errorRateLimit: "Too many requests. Please try again in a moment.",
+    errorGeneric: "Insights temporarily unavailable. Try again.",
+  },
   charts: {
     sevenDaySummary: "7-Day Summary",
     total: "Total",
@@ -108,11 +136,9 @@ const en = {
     moreProductiveSide: "More productive side:",
     sessionsPerDay: "sessions/day",
     average: "Average",
-    dataCleanup: "Data Cleanup",
-    unusualAmounts: "unusual amounts detected (avg is {{avg}})",
-    smallAmounts: "sessions with very small or zero amounts",
-    noSide: "sessions without a side specified",
-    reviewInHistory: "Review in History",
+    weeklyBreakdown: "This Week",
+    bestDay: "Best Day",
+    dailyAvg: "Daily Avg",
     morning: "morning",
     afternoon: "afternoon",
     evening: "evening",
@@ -231,6 +257,12 @@ const en = {
     completeDesc:
       "Start logging your first session and let ClaudiaFlow help you understand your journey better.",
   },
+  timer: {
+    title: "Timer",
+    tapToStart: "Tap to start timing",
+    recording: "Recording",
+    sinceLastPump: "Since last pump:",
+  },
   errors: {
     somethingWentWrong: "Oops! Something went wrong",
     unexpectedError:
@@ -248,6 +280,7 @@ const en = {
   promptStarters: {
     categories: {
       myData: "My Data",
+      visuals: "Visuals",
       babyCare: "Baby Care",
       feeding: "Pumping & Feeding",
       quickHelp: "Quick Help",
@@ -303,6 +336,17 @@ const en = {
     qhQuickmeal: "Quick meal",
     qhQuickmealFull:
       "I have chicken, rice, and 20 minutes. What can I make one-handed?",
+    visWeekly: "Weekly infographic",
+    visWeeklyFull:
+      "Create a visual infographic of my pumping and feeding data from this week",
+    visToday: "Today's visual",
+    visTodayFull: "Generate a visual summary of today's sessions",
+    visSides: "Left vs right",
+    visSidesFull:
+      "Create a visual comparing my left vs right side pumping output",
+    visTrend: "Supply trend visual",
+    visTrendFull:
+      "Make an infographic showing my milk supply trend over the past month",
   },
 } as const;
 
