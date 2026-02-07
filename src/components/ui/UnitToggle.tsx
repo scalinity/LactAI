@@ -1,33 +1,36 @@
 import React from 'react';
+import type { Unit } from '@/types/common';
 
 interface UnitToggleProps {
-  isMetric: boolean;
-  onChange: (isMetric: boolean) => void;
+  value: Unit;
+  onChange: (unit: Unit) => void;
   className?: string;
 }
 
-export const UnitToggle: React.FC<UnitToggleProps> = ({ isMetric, onChange, className = '' }) => {
+export const UnitToggle: React.FC<UnitToggleProps> = ({ value, onChange, className = '' }) => {
   return (
-    <div className={`flex items-center space-x-2 ${className}`}>
+    <div className={`flex items-center rounded-xl bg-plum/[0.04] p-1 ${className}`} role="group" aria-label="Unit selection">
       <button
-        onClick={() => onChange(false)}
-        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-          !isMetric
-            ? 'bg-blue-500 text-white'
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-        }`}
-      >
-        oz
-      </button>
-      <button
-        onClick={() => onChange(true)}
-        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-          isMetric
-            ? 'bg-blue-500 text-white'
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+        onClick={() => onChange("ml")}
+        aria-pressed={value === "ml"}
+        className={`rounded-lg px-3 py-1 text-sm font-semibold transition-all ${
+          value === "ml"
+            ? "bg-rose-primary text-white shadow-sm"
+            : "text-plum/40 hover:text-plum/60"
         }`}
       >
         ml
+      </button>
+      <button
+        onClick={() => onChange("oz")}
+        aria-pressed={value === "oz"}
+        className={`rounded-lg px-3 py-1 text-sm font-semibold transition-all ${
+          value === "oz"
+            ? "bg-rose-primary text-white shadow-sm"
+            : "text-plum/40 hover:text-plum/60"
+        }`}
+      >
+        oz
       </button>
     </div>
   );

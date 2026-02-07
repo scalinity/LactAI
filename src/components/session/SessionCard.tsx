@@ -1,18 +1,22 @@
+import { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Session } from "@/types/session";
-import { formatAmount, mlToOz, convertAmount } from "@/lib/units";
+import { formatAmount, convertAmount } from "@/lib/units";
 import { formatRelativeTime } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
+import { useTranslation } from "@/i18n";
 import Badge from "@/components/ui/Badge";
 import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TYPE_STYLES = {
   feeding: {
-    gradient: "linear-gradient(180deg, #e8a0bf 0%, #f2c6de 100%)",
+    gradient:
+      "linear-gradient(180deg, var(--color-rose-primary) 0%, var(--color-rose-light) 100%)",
   },
   pumping: {
-    gradient: "linear-gradient(180deg, #a8c5a0 0%, #c4dbbe 100%)",
+    gradient:
+      "linear-gradient(180deg, var(--color-sage) 0%, var(--color-sage-dark) 100%)",
   },
 } as const;
 
@@ -22,22 +26,31 @@ interface SessionCardProps {
   className?: string;
 }
 
-export default function SessionCard({
+export default memo(function SessionCard({
   session,
   onDelete,
   className,
 }: SessionCardProps) {
   const navigate = useNavigate();
   const preferredUnit = useAppStore((s) => s.preferredUnit);
+  const { t } = useTranslation();
   const style = session.session_type
     ? TYPE_STYLES[session.session_type]
     : TYPE_STYLES.feeding;
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={() => session.id && navigate(`/log/${session.id}`)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          session.id && navigate(`/log/${session.id}`);
+        }
+      }}
       className={cn(
-        "group relative flex items-center justify-between overflow-hidden rounded-2xl bg-white border border-plum/[0.04] px-4 py-3 shadow-sm transition-all hover:shadow-md hover:border-plum/[0.08] active:scale-[0.99] cursor-pointer",
+        "group relative flex items-center justify-between overflow-hidden rounded-2xl bg-surface border border-plum/[0.04] px-4 py-3 shadow-sm transition-all hover:shadow-md hover:border-plum/[0.08] active:scale-[0.99] cursor-pointer",
         className,
       )}
     >
@@ -53,9 +66,13 @@ export default function SessionCard({
           <div className="flex items-center gap-1.5">
             {session.session_type && (
               <Badge
-                variant={session.session_type === "pumping" ? "success" : "rose"}
+                variant={
+                  session.session_type === "pumping" ? "success" : "rose"
+                }
               >
-                {session.session_type === "pumping" ? "pump" : "feed"}
+                {session.session_type === "pumping"
+                  ? t("session.pump")
+                  : t("session.feed")}
               </Badge>
             )}
             {session.side && session.side !== "unknown" && (
@@ -101,4 +118,4 @@ export default function SessionCard({
       </div>
     </div>
   );
-}
+});

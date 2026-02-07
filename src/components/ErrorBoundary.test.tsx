@@ -258,7 +258,7 @@ describe("ErrorBoundary", () => {
       const container = screen
         .getByText(/something went wrong/i)
         .closest("div");
-      expect(container).toHaveClass("bg-white", "rounded-lg", "shadow-lg");
+      expect(container).toHaveClass("bg-surface", "rounded-xl", "shadow-lg");
     });
 
     it("should center error display", () => {

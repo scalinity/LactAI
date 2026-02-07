@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, type DragEvent } from "react";
 import { cn } from "@/lib/utils";
 import { Upload } from "lucide-react";
+import { useTranslation } from "@/i18n";
 
 interface PhotoUploaderProps {
   onFilesSelected: (files: File[]) => void;
@@ -11,6 +12,7 @@ export default function PhotoUploader({
   onFilesSelected,
   className,
 }: PhotoUploaderProps) {
+  const { t } = useTranslation();
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -52,7 +54,7 @@ export default function PhotoUploader({
         "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-8 transition-colors",
         dragging
           ? "border-rose-primary bg-rose-primary/5"
-          : "border-plum/20 bg-white hover:border-rose-primary/50 hover:bg-cream",
+          : "border-plum/20 bg-surface hover:border-rose-primary/50 hover:bg-cream",
         className,
       )}
     >
@@ -61,9 +63,11 @@ export default function PhotoUploader({
       </div>
       <div className="text-center">
         <p className="text-sm font-medium text-plum">
-          Drop photos here or click to select
+          {t("photos.dropPhotos")}
         </p>
-        <p className="mt-1 text-xs text-plum/40">Supports JPG, PNG, HEIC</p>
+        <p className="mt-1 text-xs text-plum/40">
+          {t("photos.supportsFormats")}
+        </p>
       </div>
       <input
         ref={inputRef}

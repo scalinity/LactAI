@@ -8,6 +8,8 @@ describe("Vision Route", () => {
     vi.clearAllMocks();
   });
 
+  const TEST_DEVICE_ID = "550e8400-e29b-41d4-a716-446655440000";
+
   const mockEnv = {
     ...env,
     OPENROUTER_API_KEY: "test-key",
@@ -20,12 +22,14 @@ describe("Vision Route", () => {
     MAX_DAILY_REQUESTS_PER_DEVICE: "100",
   };
 
+  // Valid base64 image (1x1 PNG, padded to meet 100 char minimum)
   const validBase64Image =
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg" +
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==";
 
   describe("Validation", () => {
     it("should reject missing X-Device-ID header", async () => {
-      const req = new Request("http://localhost/vision", {
+      const req = new Request("http://localhost/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -39,16 +43,16 @@ describe("Vision Route", () => {
 
       expect(res.status).toBe(400);
       expect(json).toMatchObject({
-        error: "MISSING_DEVICE_ID",
+        error: "INVALID_DEVICE_ID",
       });
     });
 
     it("should reject invalid JSON body", async () => {
-      const req = new Request("http://localhost/vision", {
+      const req = new Request("http://localhost/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Device-ID": "1234567890123456",
+          "X-Device-ID": TEST_DEVICE_ID,
         },
         body: "not json",
       });
@@ -63,11 +67,11 @@ describe("Vision Route", () => {
     });
 
     it("should reject missing image field", async () => {
-      const req = new Request("http://localhost/vision", {
+      const req = new Request("http://localhost/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Device-ID": "1234567890123456",
+          "X-Device-ID": TEST_DEVICE_ID,
         },
         body: JSON.stringify({
           mime_type: "image/png",
@@ -84,11 +88,11 @@ describe("Vision Route", () => {
     });
 
     it("should reject invalid mime_type", async () => {
-      const req = new Request("http://localhost/vision", {
+      const req = new Request("http://localhost/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Device-ID": "1234567890123456",
+          "X-Device-ID": TEST_DEVICE_ID,
         },
         body: JSON.stringify({
           image: validBase64Image,
@@ -125,11 +129,11 @@ describe("Vision Route", () => {
           }),
         });
 
-        const req = new Request("http://localhost/vision", {
+        const req = new Request("http://localhost/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Device-ID": `test-device-${mimeType.replace("/", "-")}`,
+            "X-Device-ID": TEST_DEVICE_ID,
           },
           body: JSON.stringify({
             image: validBase64Image,
@@ -152,11 +156,11 @@ describe("Vision Route", () => {
         MAX_IMAGE_SIZE_BYTES: "100", // 100 bytes
       };
 
-      const req = new Request("http://localhost/vision", {
+      const req = new Request("http://localhost/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Device-ID": "1234567890123456",
+          "X-Device-ID": TEST_DEVICE_ID,
         },
         body: JSON.stringify({
           image: validBase64Image,
@@ -207,11 +211,11 @@ describe("Vision Route", () => {
       global.fetch = vi.fn().mockResolvedValue(mockResponse);
 
       // First request - should call OpenRouter
-      const req1 = new Request("http://localhost/vision", {
+      const req1 = new Request("http://localhost/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Device-ID": "cache-test-device-001",
+          "X-Device-ID": TEST_DEVICE_ID,
         },
         body: JSON.stringify({
           image: validBase64Image,
@@ -224,7 +228,7 @@ describe("Vision Route", () => {
         mockEnv,
         createExecutionContext(),
       );
-      const json1 = await res1.json();
+      const json1 = (await res1.json()) as { cached: boolean; data: unknown };
 
       expect(res1.status).toBe(200);
       expect(json1.cached).toBe(false);
@@ -234,11 +238,11 @@ describe("Vision Route", () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Second request - should use cache
-      const req2 = new Request("http://localhost/vision", {
+      const req2 = new Request("http://localhost/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Device-ID": "cache-test-device-002",
+          "X-Device-ID": "660e8400-e29b-41d4-a716-446655440001",
         },
         body: JSON.stringify({
           image: validBase64Image,
@@ -251,7 +255,7 @@ describe("Vision Route", () => {
         mockEnv,
         createExecutionContext(),
       );
-      const json2 = await res2.json();
+      const json2 = (await res2.json()) as { cached: boolean; data: unknown };
 
       expect(res2.status).toBe(200);
       expect(json2.cached).toBe(true);
@@ -290,11 +294,11 @@ describe("Vision Route", () => {
 
       global.fetch = vi.fn().mockResolvedValue(mockResponse);
 
-      const req = new Request("http://localhost/vision", {
+      const req = new Request("http://localhost/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Device-ID": "extract-test-device-123",
+          "X-Device-ID": TEST_DEVICE_ID,
         },
         body: JSON.stringify({
           image: validBase64Image,
@@ -307,7 +311,13 @@ describe("Vision Route", () => {
       });
 
       const res = await visionApp.fetch(req, mockEnv, createExecutionContext());
-      const json = await res.json();
+      const json = (await res.json()) as {
+        success: boolean;
+        data: {
+          entries: Array<{ amount: number; unit: string; confidence: number }>;
+          warnings: string[];
+        };
+      };
 
       expect(res.status).toBe(200);
       expect(json.success).toBe(true);
@@ -350,11 +360,11 @@ describe("Vision Route", () => {
 
       global.fetch = vi.fn().mockResolvedValue(mockResponse);
 
-      const req = new Request("http://localhost/vision", {
+      const req = new Request("http://localhost/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Device-ID": "partial-schema-device-456",
+          "X-Device-ID": TEST_DEVICE_ID,
         },
         body: JSON.stringify({
           image: validBase64Image,
@@ -363,7 +373,7 @@ describe("Vision Route", () => {
       });
 
       const res = await visionApp.fetch(req, mockEnv, createExecutionContext());
-      const json = await res.json();
+      const json = (await res.json()) as { success: boolean };
 
       expect(res.status).toBe(200);
       expect(json.success).toBe(true);
@@ -385,11 +395,11 @@ describe("Vision Route", () => {
 
       global.fetch = vi.fn().mockResolvedValue(mockResponse);
 
-      const req = new Request("http://localhost/vision", {
+      const req = new Request("http://localhost/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Device-ID": "invalid-json-device-789",
+          "X-Device-ID": TEST_DEVICE_ID,
         },
         body: JSON.stringify({
           image: validBase64Image,
@@ -424,11 +434,11 @@ describe("Vision Route", () => {
 
       global.fetch = vi.fn().mockResolvedValue(mockResponse);
 
-      const req = new Request("http://localhost/vision", {
+      const req = new Request("http://localhost/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Device-ID": "reasoning-tags-device-abc",
+          "X-Device-ID": TEST_DEVICE_ID,
         },
         body: JSON.stringify({
           image: validBase64Image,
@@ -437,7 +447,7 @@ describe("Vision Route", () => {
       });
 
       const res = await visionApp.fetch(req, mockEnv, createExecutionContext());
-      const json = await res.json();
+      const json = (await res.json()) as { success: boolean; data: unknown };
 
       expect(res.status).toBe(200);
       expect(json.success).toBe(true);
@@ -456,11 +466,11 @@ describe("Vision Route", () => {
           new OpenRouterError(500, "Internal server error", "server_error"),
         );
 
-      const req = new Request("http://localhost/vision", {
+      const req = new Request("http://localhost/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Device-ID": "error-test-device-123",
+          "X-Device-ID": TEST_DEVICE_ID,
         },
         body: JSON.stringify({
           image: validBase64Image,
@@ -474,7 +484,7 @@ describe("Vision Route", () => {
       expect(res.status).toBe(503);
       expect(json).toMatchObject({
         error: "UPSTREAM_ERROR",
-        message: "Internal server error",
+        message: "AI service temporarily unavailable",
       });
     });
 
@@ -485,11 +495,11 @@ describe("Vision Route", () => {
           new OpenRouterError(400, "Invalid request", "invalid_request"),
         );
 
-      const req = new Request("http://localhost/vision", {
+      const req = new Request("http://localhost/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Device-ID": "error-test-device-456",
+          "X-Device-ID": TEST_DEVICE_ID,
         },
         body: JSON.stringify({
           image: validBase64Image,
@@ -503,18 +513,18 @@ describe("Vision Route", () => {
       expect(res.status).toBe(502);
       expect(json).toMatchObject({
         error: "UPSTREAM_ERROR",
-        message: "Invalid request",
+        message: "AI service temporarily unavailable",
       });
     });
 
-    it("should propagate non-OpenRouter errors", async () => {
+    it("should return 500 for non-OpenRouter errors", async () => {
       global.fetch = vi.fn().mockRejectedValue(new Error("Network failure"));
 
-      const req = new Request("http://localhost/vision", {
+      const req = new Request("http://localhost/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Device-ID": "network-error-device-789",
+          "X-Device-ID": TEST_DEVICE_ID,
         },
         body: JSON.stringify({
           image: validBase64Image,
@@ -522,9 +532,10 @@ describe("Vision Route", () => {
         }),
       });
 
-      await expect(
-        visionApp.fetch(req, mockEnv, createExecutionContext()),
-      ).rejects.toThrow("Network failure");
+      const res = await visionApp.fetch(req, mockEnv, createExecutionContext());
+
+      // Hono catches unhandled errors and returns 500
+      expect(res.status).toBe(500);
     });
   });
 
@@ -548,11 +559,11 @@ describe("Vision Route", () => {
 
       global.fetch = vi.fn().mockResolvedValue(mockResponse);
 
-      const req = new Request("http://localhost/vision", {
+      const req = new Request("http://localhost/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Device-ID": "context-test-device-xyz",
+          "X-Device-ID": TEST_DEVICE_ID,
         },
         body: JSON.stringify({
           image: validBase64Image,
@@ -588,11 +599,11 @@ describe("Vision Route", () => {
 
       global.fetch = vi.fn().mockResolvedValue(mockResponse);
 
-      const req = new Request("http://localhost/vision", {
+      const req = new Request("http://localhost/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Device-ID": "no-context-device-000",
+          "X-Device-ID": TEST_DEVICE_ID,
         },
         body: JSON.stringify({
           image: validBase64Image,

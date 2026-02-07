@@ -6,8 +6,10 @@ import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import { Plus, Trash2 } from "lucide-react";
+import { useTranslation } from "@/i18n";
 
 export default function ThreadList() {
+  const { t } = useTranslation();
   const threads = useChatThreads();
   const { activeThreadId, setActiveThread } = useChatStore();
   const { createThread, deleteThread } = useChatActions();
@@ -30,7 +32,7 @@ export default function ThreadList() {
         className="w-full"
       >
         <Plus className="h-4 w-4" />
-        New Chat
+        {t("chat.newChat")}
       </Button>
       {threads?.map((thread) => (
         <div
@@ -40,7 +42,7 @@ export default function ThreadList() {
             "group relative w-full cursor-pointer rounded-xl px-3 py-2.5 text-left transition-colors",
             activeThreadId === thread.id
               ? "bg-rose-primary/10 border border-rose-primary/30"
-              : "bg-white border border-plum/5 hover:bg-plum/[0.02]",
+              : "bg-surface border border-plum/5 hover:bg-plum/[0.02]",
           )}
         >
           <p className="truncate pr-6 text-sm font-medium text-plum">

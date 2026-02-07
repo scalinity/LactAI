@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
-import { format } from "date-fns";
+import { memo, type ReactNode } from "react";
 import { formatAmount } from "@/lib/units";
+import { formatDayHeader } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
+import { useTranslation } from "@/i18n";
 import { mlToOz } from "@/lib/units";
 
 interface DayGroupProps {
@@ -12,7 +13,7 @@ interface DayGroupProps {
   children: ReactNode;
 }
 
-export default function DayGroup({
+export default memo(function DayGroup({
   date,
   totalMl,
   feedTotalMl,
@@ -20,6 +21,7 @@ export default function DayGroup({
   children,
 }: DayGroupProps) {
   const { preferredUnit } = useAppStore();
+  const { t } = useTranslation();
   const displayTotal =
     preferredUnit === "oz" ? mlToOz(totalMl) : Math.round(totalMl);
   const hasTypedData =
@@ -32,7 +34,7 @@ export default function DayGroup({
       <div className="flex flex-col gap-0.5 px-1">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-bold text-plum/70">
-            {format(date, "EEE, MMM d")}
+            {formatDayHeader(date)}
           </h3>
           <span className="h-1 w-1 rounded-full bg-plum/20" />
           <span className="text-sm font-semibold text-rose-primary">
@@ -44,7 +46,7 @@ export default function DayGroup({
           <div className="flex items-center gap-2 pl-0.5">
             {feedTotalMl! > 0 && (
               <span className="text-[10px] font-semibold text-rose-dark/70">
-                Feed:{" "}
+                {t("history.feedLabel")}{" "}
                 {formatAmount(
                   preferredUnit === "oz"
                     ? mlToOz(feedTotalMl!)
@@ -58,7 +60,7 @@ export default function DayGroup({
             )}
             {pumpTotalMl! > 0 && (
               <span className="text-[10px] font-semibold text-sage-dark/70">
-                Pump:{" "}
+                {t("history.pumpLabel")}{" "}
                 {formatAmount(
                   preferredUnit === "oz"
                     ? mlToOz(pumpTotalMl!)
@@ -73,4 +75,4 @@ export default function DayGroup({
       <div className="space-y-1.5">{children}</div>
     </div>
   );
-}
+});

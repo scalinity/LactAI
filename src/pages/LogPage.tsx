@@ -4,11 +4,13 @@ import { db } from "@/db";
 import SessionForm from "@/components/session/SessionForm";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "@/i18n";
 
 export default function LogPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const isEditMode = !!sessionId;
+  const { t } = useTranslation();
 
   const existingSession = useLiveQuery(
     () =>
@@ -30,12 +32,12 @@ export default function LogPage() {
       <div className="mb-6 flex items-center gap-3">
         <Link
           to={isEditMode ? "/history" : "/"}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-plum/60 shadow-sm transition-all hover:bg-plum/5 hover:text-plum active:scale-95"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-plum/60 shadow-sm transition-all hover:bg-plum/5 hover:text-plum active:scale-95"
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <h1 className="font-[Nunito] text-2xl font-bold text-plum">
-          {isEditMode ? "Edit Session" : "Log Session"}
+          {isEditMode ? t("log.editSession") : t("log.logSession")}
         </h1>
       </div>
 

@@ -1,20 +1,31 @@
 import { NavLink } from "react-router-dom";
 import { House, Plus, List, TrendingUp, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/i18n";
 
 const tabs = [
-  { to: "/", icon: House, label: "Home" },
-  { to: "/log", icon: Plus, label: "Log" },
-  { to: "/history", icon: List, label: "History" },
-  { to: "/trends", icon: TrendingUp, label: "Trends" },
-  { to: "/chat", icon: MessageCircle, label: "Chat" },
+  { to: "/", icon: House },
+  { to: "/log", icon: Plus },
+  { to: "/history", icon: List },
+  { to: "/trends", icon: TrendingUp },
+  { to: "/chat", icon: MessageCircle },
 ] as const;
 
 export default function BottomNav() {
+  const { t } = useTranslation();
+
+  const labels: Record<string, string> = {
+    "/": t("nav.home"),
+    "/log": t("nav.log"),
+    "/history": t("nav.history"),
+    "/trends": t("nav.trends"),
+    "/chat": t("nav.chat"),
+  };
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-plum/[0.06] bg-white/95 backdrop-blur-lg safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-plum/[0.06] bg-surface/95 backdrop-blur-lg safe-area-bottom">
       <div className="mx-auto flex max-w-3xl items-stretch">
-        {tabs.map(({ to, icon: Icon, label }) => (
+        {tabs.map(({ to, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -31,7 +42,7 @@ export default function BottomNav() {
             {({ isActive }) => (
               <>
                 <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
-                <span>{label}</span>
+                <span>{labels[to]}</span>
                 {isActive && (
                   <div className="absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-rose-primary" />
                 )}

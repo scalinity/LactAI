@@ -19,12 +19,13 @@ export default function Toggle<T extends string>({
   className,
 }: ToggleProps<T>) {
   return (
-    <div className={cn("inline-flex rounded-xl bg-plum/[0.04] p-1", className)}>
+    <div className={cn("inline-flex rounded-xl bg-plum/[0.04] p-1", className)} role="group">
       {options.map((opt) => (
         <button
           key={opt.value}
           type="button"
           onClick={() => onChange(opt.value)}
+          aria-pressed={opt.value === value}
           className={cn(
             "rounded-lg px-4 py-1.5 text-sm font-semibold transition-all",
             opt.value === value

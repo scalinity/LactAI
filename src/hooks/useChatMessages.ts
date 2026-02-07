@@ -1,6 +1,8 @@
 import { db } from "@/db";
 import { useChatStore } from "@/stores/useChatStore";
-import { streamChatMessage } from "@/lib/api";
+import { useAppStore } from "@/stores/useAppStore";
+import { streamChatMessage, generateChatTitle } from "@/lib/api";
+import { buildChatContext } from "@/lib/build-chat-context";
 import type { ChatMessage, ChatImageData } from "@/types/chat";
 import toast from "react-hot-toast";
 import { useEffect, useRef } from "react";
@@ -9,13 +11,20 @@ function stripThinkTags(raw: string): string {
   return raw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
 }
 
+export function truncateTitle(text: string): string {
+  return text.slice(0, 50) + (text.length > 50 ? "..." : "");
+}
+
 export function useChatActions() {
   const { activeThreadId, setActiveThread, setStreaming, setStreamingContent } =
     useChatStore();
 
+  // Declare ref at the top before first use
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const createThread = async (initialMessage?: string): Promise<number> => {
     const title = initialMessage
-      ? initialMessage.slice(0, 50) + (initialMessage.length > 50 ? "..." : "")
+      ? truncateTitle(initialMessage)
       : "New conversation";
     const id = await db.chat_threads.add({
       created_at: new Date(),
@@ -25,8 +34,13 @@ export function useChatActions() {
     return id as number;
   };
 
-  const sendMessage = async (content: string, image?: ChatImageData): Promise<void> => {
-    if (!activeThreadId) return;
+  const sendMessage = async (
+    content: string,
+    image?: ChatImageData,
+    threadId?: number,
+  ): Promise<void> => {
+    const resolvedThreadId = threadId ?? activeThreadId;
+    if (!resolvedThreadId) return;
 
     // Abort previous request if still running
     if (abortControllerRef.current) {
@@ -37,7 +51,7 @@ export function useChatActions() {
     abortControllerRef.current = new AbortController();
 
     await db.chat_messages.add({
-      thread_id: activeThreadId,
+      thread_id: resolvedThreadId,
       role: "user",
       content,
       created_at: new Date(),
@@ -49,13 +63,22 @@ export function useChatActions() {
     try {
       const history = await db.chat_messages
         .where("thread_id")
-        .equals(activeThreadId)
+        .equals(resolvedThreadId)
         .sortBy("created_at");
 
-      // Only include image on the last user message to avoid bloating payload
-      const lastImageIdx = history.findLastIndex((m) => m.image);
+      // Server schema caps at 11 messages; keep the most recent 10
+      const trimmed = history.length > 10 ? history.slice(-10) : history;
 
-      const messages = history.map((m: ChatMessage, idx: number) => {
+      // Only include image on the last user message to avoid bloating payload
+      let lastImageIdx = -1;
+      for (let i = trimmed.length - 1; i >= 0; i--) {
+        if (trimmed[i].image) {
+          lastImageIdx = i;
+          break;
+        }
+      }
+
+      const messages = trimmed.map((m: ChatMessage, idx: number) => {
         if (m.image && idx === lastImageIdx) {
           const parts: Array<
             | { type: "text"; text: string }
@@ -81,11 +104,72 @@ export function useChatActions() {
         };
       });
 
-      for await (const chunk of streamChatMessage(messages, {
-        signal: abortControllerRef.current.signal,
-      })) {
-        setStreamingContent(stripThinkTags(chunk));
-      }
+      // Fix: Use callback-based API, not async generator
+      const preferredUnit = useAppStore.getState().preferredUnit;
+      const chatContext = await buildChatContext(preferredUnit);
+
+      await streamChatMessage(
+        messages,
+        {
+          onChunk: (fullText) => {
+            setStreamingContent(stripThinkTags(fullText));
+          },
+          onDone: async (fullText) => {
+            try {
+              const responseText = stripThinkTags(fullText);
+
+              const hasRedFlags =
+                responseText
+                  .toLowerCase()
+                  .includes("please contact your healthcare provider") ||
+                responseText.toLowerCase().includes("emergency services");
+
+              const flags: ChatMessage["flags"] = [];
+              if (hasRedFlags) flags.push("medical_caution");
+
+              await db.chat_messages.add({
+                thread_id: resolvedThreadId,
+                role: "assistant",
+                content: responseText,
+                created_at: new Date(),
+                flags: flags.length > 0 ? flags : undefined,
+              });
+
+              // Generate title after first exchange in a thread
+              const thread = await db.chat_threads.get(resolvedThreadId);
+              const fallbackTitle = truncateTitle(content);
+              if (
+                thread &&
+                (thread.title === "New conversation" ||
+                  thread.title === fallbackTitle)
+              ) {
+                generateChatTitle(content, responseText)
+                  .then((title) =>
+                    db.chat_threads.update(resolvedThreadId, { title }),
+                  )
+                  .catch((err) => {
+                    console.warn("Title generation failed:", err);
+                  });
+              }
+            } catch (e) {
+              console.warn("Failed to save assistant message:", e);
+              toast.error("Response received but failed to save");
+            } finally {
+              setStreamingContent("");
+            }
+          },
+          onError: (error) => {
+            toast.error(error.message);
+          },
+        },
+        {
+          data_summary: chatContext.data_summary,
+          session_count: chatContext.session_count,
+          preferred_unit: preferredUnit,
+          thread_summaries: chatContext.thread_summaries,
+        },
+        abortControllerRef.current.signal,
+      );
     } catch (err) {
       if (err instanceof Error && (err as any).name === "AbortError") {
         // Request was aborted, ignore
@@ -112,8 +196,6 @@ export function useChatActions() {
     await db.chat_threads.clear();
     setActiveThread(null);
   };
-
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Cleanup on unmount
   useEffect(() => {

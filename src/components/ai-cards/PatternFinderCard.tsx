@@ -4,8 +4,11 @@ import { convertAmount, formatAmount } from "@/lib/units";
 import { subDays } from "date-fns";
 import { Sparkles, Sun, Moon, Sunrise } from "lucide-react";
 import Card from "@/components/ui/Card";
+import { useTranslation } from "@/i18n";
 
-function getTimeOfDay(date: Date): "morning" | "afternoon" | "evening" | "night" {
+function getTimeOfDay(
+  date: Date,
+): "morning" | "afternoon" | "evening" | "night" {
   const h = date.getHours();
   if (h < 6) return "night";
   if (h < 12) return "morning";
@@ -21,6 +24,7 @@ const TimeIcon = {
 } as const;
 
 export default function PatternFinderCard() {
+  const { t } = useTranslation();
   const { preferredUnit } = useAppStore();
   const sessions = useSessions({ startDate: subDays(new Date(), 30) });
 
@@ -67,14 +71,17 @@ export default function PatternFinderCard() {
       <div className="mb-3 flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-amber-400" />
         <h3 className="font-[Nunito] text-sm font-bold text-plum">
-          Patterns (30 days)
+          {t("charts.patterns30Days")}
         </h3>
       </div>
       <div className="space-y-3 text-sm text-plum/80">
         <div className="flex items-center gap-2">
           <BestIcon className="h-4 w-4 text-rose-primary" />
           <span>
-            Best time: <strong className="text-plum capitalize">{bestTimeKey}</strong>{" "}
+            {t("charts.bestTime")}{" "}
+            <strong className="text-plum capitalize">
+              {t(`charts.${bestTimeKey}` as any)}
+            </strong>{" "}
             (avg{" "}
             {formatAmount(
               convertAmount(bestAvg, "ml", preferredUnit),
@@ -89,7 +96,7 @@ export default function PatternFinderCard() {
               {bestSide[0][0].toUpperCase()}
             </span>
             <span>
-              More productive side:{" "}
+              {t("charts.moreProductiveSide")}{" "}
               <strong className="text-plum capitalize">{bestSide[0]}</strong>
             </span>
           </div>
@@ -97,8 +104,9 @@ export default function PatternFinderCard() {
         <div className="flex items-center gap-2">
           <span className="text-plum/40">#</span>
           <span>
-            Average <strong className="text-plum">{avgSessionsPerDay}</strong>{" "}
-            sessions/day
+            {t("charts.average")}{" "}
+            <strong className="text-plum">{avgSessionsPerDay}</strong>{" "}
+            {t("charts.sessionsPerDay")}
           </span>
         </div>
       </div>

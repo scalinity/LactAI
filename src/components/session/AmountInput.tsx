@@ -39,7 +39,7 @@ export default function AmountInput({
         className="mt-1 h-[2px] w-24 rounded-full"
         style={{
           background:
-            "linear-gradient(90deg, transparent 0%, #e8a0bf 50%, transparent 100%)",
+            "linear-gradient(90deg, transparent 0%, var(--color-rose-primary) 50%, transparent 100%)",
         }}
       />
     </div>

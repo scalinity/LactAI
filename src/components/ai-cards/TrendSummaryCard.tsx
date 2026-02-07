@@ -4,8 +4,10 @@ import { convertAmount, formatAmount } from "@/lib/units";
 import { subDays } from "date-fns";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import Card from "@/components/ui/Card";
+import { useTranslation } from "@/i18n";
 
 export default function TrendSummaryCard() {
+  const { t } = useTranslation();
   const { preferredUnit } = useAppStore();
   const todaySessions = useTodaySessions();
 
@@ -31,8 +33,7 @@ export default function TrendSummaryCard() {
       ? ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100
       : 0;
 
-  const TrendIcon =
-    diff > 5 ? TrendingUp : diff < -5 ? TrendingDown : Minus;
+  const TrendIcon = diff > 5 ? TrendingUp : diff < -5 ? TrendingDown : Minus;
   const trendColor =
     diff > 5 ? "text-sage" : diff < -5 ? "text-amber-500" : "text-plum/40";
 
@@ -41,13 +42,13 @@ export default function TrendSummaryCard() {
       <div className="mb-3 flex items-center gap-2">
         <TrendingUp className="h-5 w-5 text-sage" />
         <h3 className="font-[Nunito] text-sm font-bold text-plum">
-          7-Day Summary
+          {t("charts.sevenDaySummary")}
         </h3>
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div>
           <p className="text-[10px] font-medium uppercase tracking-wide text-plum/40">
-            Total
+            {t("charts.total")}
           </p>
           <p className="font-[Nunito] text-lg font-bold text-plum">
             {formatAmount(
@@ -58,7 +59,7 @@ export default function TrendSummaryCard() {
         </div>
         <div>
           <p className="text-[10px] font-medium uppercase tracking-wide text-plum/40">
-            Avg/Session
+            {t("charts.avgPerSession")}
           </p>
           <p className="font-[Nunito] text-lg font-bold text-plum">
             {formatAmount(
@@ -69,12 +70,14 @@ export default function TrendSummaryCard() {
         </div>
         <div>
           <p className="text-[10px] font-medium uppercase tracking-wide text-plum/40">
-            vs Last Week
+            {t("charts.vsLastWeek")}
           </p>
           <div className="flex items-center gap-1">
             <TrendIcon className={`h-4 w-4 ${trendColor}`} />
             <p className={`font-[Nunito] text-lg font-bold ${trendColor}`}>
-              {lastWeekTotal === 0 ? "--" : `${diff > 0 ? "+" : ""}${diff.toFixed(0)}%`}
+              {lastWeekTotal === 0
+                ? "--"
+                : `${diff > 0 ? "+" : ""}${diff.toFixed(0)}%`}
             </p>
           </div>
         </div>

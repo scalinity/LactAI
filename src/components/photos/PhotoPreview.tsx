@@ -19,7 +19,7 @@ export default function PhotoPreview({
   return (
     <div
       className={cn(
-        "flex items-center gap-3 rounded-xl border border-plum/10 bg-white p-2",
+        "flex items-center gap-3 rounded-xl border border-plum/10 bg-surface p-2",
         className,
       )}
     >

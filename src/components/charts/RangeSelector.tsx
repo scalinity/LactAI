@@ -16,14 +16,16 @@ export default function RangeSelector({
 }: RangeSelectorProps) {
   const { t } = useTranslation();
   return (
-    <div className={cn("flex rounded-xl bg-plum/5 p-1", className)}>
+    <div
+      className={cn("inline-flex gap-1 rounded-xl bg-plum/5 p-1", className)}
+    >
       {RANGE_PRESETS.map((preset) => (
         <button
           key={preset.value}
           type="button"
           onClick={() => onChange(preset.value)}
           className={cn(
-            "flex-1 rounded-lg px-3 py-1 text-xs font-medium transition-colors",
+            "rounded-lg px-4 py-1.5 text-sm font-medium transition-colors",
             preset.value === value
               ? "bg-rose-primary text-white shadow-sm"
               : "text-plum/60 hover:text-plum",

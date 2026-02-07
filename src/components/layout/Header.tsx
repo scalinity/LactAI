@@ -9,8 +9,7 @@ export default function Header() {
           <span
             className="font-[Nunito] text-xl font-extrabold tracking-tight"
             style={{
-              color: "#3d2c3e",
-              background: "linear-gradient(135deg, #3d2c3e 0%, #c77da3 100%)",
+              background: "linear-gradient(135deg, var(--color-plum) 0%, var(--color-rose-dark) 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
@@ -30,7 +29,8 @@ export default function Header() {
         className="h-[1px] w-full"
         style={{
           background:
-            "linear-gradient(90deg, transparent 0%, rgba(232,160,191,0.3) 50%, transparent 100%)",
+            "linear-gradient(90deg, transparent 0%, var(--color-rose-primary) 50%, transparent 100%)",
+          opacity: 0.3,
         }}
       />
     </header>

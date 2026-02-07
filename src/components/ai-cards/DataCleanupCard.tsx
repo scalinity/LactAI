@@ -4,8 +4,10 @@ import { convertAmount, formatAmount } from "@/lib/units";
 import { Link } from "react-router-dom";
 import { Wrench } from "lucide-react";
 import Card from "@/components/ui/Card";
+import { useTranslation } from "@/i18n";
 
 export default function DataCleanupCard() {
+  const { t } = useTranslation();
   const { preferredUnit } = useAppStore();
   const sessions = useSessions();
 
@@ -38,31 +40,31 @@ export default function DataCleanupCard() {
       <div className="mb-3 flex items-center gap-2">
         <Wrench className="h-5 w-5 text-plum/50" />
         <h3 className="font-[Nunito] text-sm font-bold text-plum">
-          Data Cleanup
+          {t("charts.dataCleanup")}
         </h3>
       </div>
       <div className="space-y-2 text-sm text-plum/70">
         {outliers.length > 0 && (
           <p>
-            <strong className="text-amber-600">{outliers.length}</strong> unusual
-            amounts detected (avg is{" "}
-            {formatAmount(
-              convertAmount(mean, "ml", preferredUnit),
-              preferredUnit,
-            )}
-            )
+            <strong className="text-amber-600">{outliers.length}</strong>{" "}
+            {t("charts.unusualAmounts", {
+              avg: formatAmount(
+                convertAmount(mean, "ml", preferredUnit),
+                preferredUnit,
+              ),
+            })}
           </p>
         )}
         {suspicious.length > 0 && (
           <p>
             <strong className="text-amber-600">{suspicious.length}</strong>{" "}
-            sessions with very small or zero amounts
+            {t("charts.smallAmounts")}
           </p>
         )}
         {noSide.length > 0 && (
           <p>
-            <strong className="text-plum/50">{noSide.length}</strong> sessions
-            without a side specified
+            <strong className="text-plum/50">{noSide.length}</strong>{" "}
+            {t("charts.noSide")}
           </p>
         )}
       </div>
@@ -71,7 +73,7 @@ export default function DataCleanupCard() {
           to="/history"
           className="mt-3 inline-block text-sm font-medium text-rose-primary hover:underline"
         >
-          Review in History
+          {t("charts.reviewInHistory")}
         </Link>
       )}
     </Card>

@@ -2,6 +2,13 @@ import type { Session } from "@/types/session";
 import { format } from "date-fns";
 import { mlToOz } from "./units";
 
+function sanitizeCSVField(value: string): string {
+  if (/^[=+\-@\t\r]/.test(value)) {
+    return `'${value}`;
+  }
+  return value;
+}
+
 export function sessionsToCSV(sessions: Session[]): string {
   const headers = [
     "Date",
@@ -35,7 +42,7 @@ export function sessionsToCSV(sessions: Session[]): string {
   ]);
 
   const csvRows = [headers, ...rows].map((row) =>
-    row.map((cell) => `"${cell}"`).join(","),
+    row.map((cell) => `"${sanitizeCSVField(cell)}"`).join(","),
   );
   return csvRows.join("\n");
 }

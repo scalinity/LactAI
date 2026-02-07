@@ -2,46 +2,40 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import OnboardingStep from "./OnboardingStep";
 import OnboardingProgress from "./OnboardingProgress";
-import UnitStep from "./UnitStep";
 import Button from "@/components/ui/Button";
 import { ChevronLeft } from "lucide-react";
+import { useTranslation } from "@/i18n";
 
 interface OnboardingOverlayProps {
   onComplete: () => void;
 }
 
-interface StepData {
-  title: string;
-  description: string;
-}
+const TOTAL_STEPS = 4;
 
-const STEPS: StepData[] = [
-  {
-    title: "Welcome to ClaudiaFlow",
-    description:
-      "Your personal calendar companion with AI-powered insights",
-  },
-  {
-    title: "Add Your Photos",
-    description:
-      "Capture or upload your calendar photos",
-  },
-  {
-    title: "Ask Questions",
-    description:
-      "Chat with AI to get insights about your schedule",
-  },
-  {
-    title: "Customize Settings",
-    description:
-      "Adjust your preferences and export your data",
-  },
-];
-
-const TOTAL_STEPS = STEPS.length;
-
-export default function OnboardingOverlay({ onComplete }: OnboardingOverlayProps) {
+export default function OnboardingOverlay({
+  onComplete,
+}: OnboardingOverlayProps) {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
+
+  const steps = [
+    {
+      title: t("onboarding.welcomeTitle"),
+      description: t("onboarding.welcomeDesc"),
+    },
+    {
+      title: t("onboarding.addPhotosTitle"),
+      description: t("onboarding.addPhotosDesc"),
+    },
+    {
+      title: t("onboarding.askQuestionsTitle"),
+      description: t("onboarding.askQuestionsDesc"),
+    },
+    {
+      title: t("onboarding.customizeTitle"),
+      description: t("onboarding.customizeDesc"),
+    },
+  ];
 
   // Lock body scroll
   useEffect(() => {
@@ -64,14 +58,13 @@ export default function OnboardingOverlay({ onComplete }: OnboardingOverlayProps
   }, []);
 
   const isLastStep = currentStep === TOTAL_STEPS - 1;
-  const isUnitStep = currentStep === 5;
 
   return createPortal(
     <div
       className="fixed inset-0 z-[60] flex flex-col bg-cream"
       role="dialog"
       aria-modal="true"
-      aria-label="Tutorial de bienvenida"
+      aria-label="Welcome tutorial"
     >
       {/* Top bar with skip */}
       <div className="flex justify-end px-5 pt-5">
@@ -79,9 +72,9 @@ export default function OnboardingOverlay({ onComplete }: OnboardingOverlayProps
           type="button"
           onClick={onComplete}
           className="text-sm font-medium text-plum/40 transition-colors hover:text-plum/70"
-          aria-label="Omitir tutorial"
+          aria-label="Skip tutorial"
         >
-          Omitir
+          {t("common.skip")}
         </button>
       </div>
 
@@ -91,21 +84,20 @@ export default function OnboardingOverlay({ onComplete }: OnboardingOverlayProps
           key={currentStep}
           className="animate-in fade-in slide-in-from-right-4 duration-300"
         >
-          {isUnitStep ? (
-            <UnitStep />
-          ) : (
-            <OnboardingStep
-              stepIndex={currentStep}
-              title={STEPS[currentStep].title}
-              description={STEPS[currentStep].description}
-            />
-          )}
+          <OnboardingStep
+            stepIndex={currentStep}
+            title={steps[currentStep].title}
+            description={steps[currentStep].description}
+          />
         </div>
       </div>
 
       {/* Bottom: progress + navigation */}
       <div className="mx-auto w-full max-w-sm px-6 pb-10">
-        <OnboardingProgress currentStep={currentStep} totalSteps={TOTAL_STEPS} />
+        <OnboardingProgress
+          currentStep={currentStep}
+          totalSteps={TOTAL_STEPS}
+        />
 
         <div className="mt-6 flex items-center gap-3">
           {currentStep > 0 ? (
@@ -113,10 +105,10 @@ export default function OnboardingOverlay({ onComplete }: OnboardingOverlayProps
               variant="ghost"
               onClick={goBack}
               className="shrink-0"
-              aria-label="Atrás"
+              aria-label="Back"
             >
               <ChevronLeft className="h-5 w-5" />
-              Atrás
+              {t("common.back")}
             </Button>
           ) : (
             <div />
@@ -128,7 +120,7 @@ export default function OnboardingOverlay({ onComplete }: OnboardingOverlayProps
             className="flex-1"
             size="lg"
           >
-            {isLastStep ? "Comenzar" : "Siguiente"}
+            {isLastStep ? t("common.getStarted") : t("common.next")}
           </Button>
         </div>
       </div>

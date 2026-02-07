@@ -57,6 +57,10 @@ REQUIRED OUTPUT SCHEMA:
 export function getChatSystemPrompt(context?: {
   baby_age_weeks?: number;
   expression_method?: string;
+  data_summary?: string;
+  session_count?: number;
+  preferred_unit?: string;
+  thread_summaries?: string;
 }): string {
   const ageContext = context?.baby_age_weeks
     ? `The baby is approximately ${context.baby_age_weeks} weeks old (${Math.floor(context.baby_age_weeks / 4.3)} months).`
@@ -64,6 +68,46 @@ export function getChatSystemPrompt(context?: {
 
   const methodContext = context?.expression_method
     ? `The parent primarily uses ${context.expression_method} expression.`
+    : "";
+
+  const dataContext = context?.data_summary
+    ? `
+USER DATA:
+You have access to this user's breast milk expression/feeding data. Use it to give personalized, data-driven answers.
+When the user asks about their data, supply, trends, or patterns, reference the specific numbers below.
+Always use ${context.preferred_unit ?? "ml"} as the unit in your responses.
+If the data shows concerning patterns (e.g., significant decrease in output), mention it gently and suggest consulting a professional.
+
+${context.data_summary}
+
+DATA RULES:
+- Reference specific numbers from the data when answering about supply, patterns, or trends
+- Compare today's total to the 7-day daily average when relevant
+- NEVER use bracket placeholders like [X oz], [Y], [date], [A oz], or [B oz] — always insert actual values from the data above (e.g., "Your total output averaged 4.2 oz/day" not "Your total output averaged [X oz/day]")
+- If the data above does not contain a specific value, omit that point or say you don't have enough data — never use a placeholder
+- Never fabricate data points not present above
+- If asked about data you don't have, say so honestly
+- Round numbers for readability (e.g., "about 650ml" not "647.3ml")
+- Use Monthly History to answer questions about long-term trends (e.g., "how has my supply changed since I started?")
+- Use Weeks 2-4 summaries for medium-term questions (e.g., "how was last month?")
+- Use Daily Totals for recent questions (e.g., "how was this week?")
+- Use today's session-level detail for immediate questions (e.g., "how am I doing today?")
+- Reference consistency/regularity stats when discussing supply stability or schedule adherence
+- Reference per-side volume averages when discussing breast balance or output differences
+- Duration data may be incomplete; note when only some sessions have duration recorded
+`
+    : context?.session_count === 0
+      ? "\nThe user has no session data recorded yet. If they ask about their data, let them know they can start logging sessions to get personalized insights.\n"
+      : (context?.session_count ?? 0) > 0
+        ? `\nThe user has ${context?.session_count} sessions logged, but detailed data could not be loaded right now. If they ask about specific numbers, let them know their data is saved and suggest they try again shortly. Do NOT make up numbers or use bracket placeholders. Give general guidance based on their question instead.\n`
+        : "";
+
+  const threadContext = context?.thread_summaries
+    ? `
+CONVERSATION MEMORY:
+These are topics from the user's recent chat threads. You can reference them for continuity when relevant.
+${context.thread_summaries}
+`
     : "";
 
   return `You are a warm, knowledgeable lactation support assistant for ClaudiaFlow, a breast milk expression tracking app.
@@ -76,6 +120,8 @@ YOUR ROLE:
 
 ${ageContext}
 ${methodContext}
+${dataContext}
+${threadContext}
 
 RESPONSE FORMAT:
 Structure every response as follows:

@@ -41,11 +41,12 @@ export default defineConfig({
             options: {
               cacheName: "google-fonts-cache",
               expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] },
+              cacheableResponse: { statuses: [200] },
             },
           },
           {
             urlPattern: /\/api\/.*/i,
+            method: "GET",
             handler: "NetworkFirst",
             options: {
               cacheName: "api-cache",
@@ -60,6 +61,18 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-echarts": ["echarts", "echarts-for-react"],
+          "vendor-dexie": ["dexie", "dexie-react-hooks"],
+          "vendor-date": ["date-fns"],
+        },
+      },
     },
   },
 });

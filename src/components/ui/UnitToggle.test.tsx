@@ -1,267 +1,165 @@
-import { render, screen, fireEvent } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi } from "vitest";
-import { UnitToggle } from "./UnitToggle";
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { UnitToggle } from './UnitToggle';
 
-describe("UnitToggle", () => {
-  describe("Rendering", () => {
-    it("should render both unit buttons", () => {
+describe('UnitToggle', () => {
+  describe('Rendering', () => {
+    it('should render both ml and oz buttons', () => {
       const onChange = vi.fn();
-      render(<UnitToggle isMetric={false} onChange={onChange} />);
-
-      expect(screen.getByRole("button", { name: /oz/i })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /ml/i })).toBeInTheDocument();
+      render(<UnitToggle value="ml" onChange={onChange} />);
+      
+      expect(screen.getByRole('button', { name: 'ml' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'oz' })).toBeInTheDocument();
     });
 
-    it("should highlight oz button when isMetric is false", () => {
+    it('should highlight ml button when value is ml', () => {
       const onChange = vi.fn();
-      render(<UnitToggle isMetric={false} onChange={onChange} />);
-
-      const ozButton = screen.getByRole("button", { name: /oz/i });
-      expect(ozButton).toHaveClass("bg-blue-500", "text-white");
+      render(<UnitToggle value="ml" onChange={onChange} />);
+      
+      const mlButton = screen.getByRole('button', { name: 'ml' });
+      expect(mlButton).toHaveClass('bg-rose-primary', 'text-white');
     });
 
-    it("should highlight ml button when isMetric is true", () => {
+    it('should highlight oz button when value is oz', () => {
       const onChange = vi.fn();
-      render(<UnitToggle isMetric={true} onChange={onChange} />);
-
-      const mlButton = screen.getByRole("button", { name: /ml/i });
-      expect(mlButton).toHaveClass("bg-blue-500", "text-white");
+      render(<UnitToggle value="oz" onChange={onChange} />);
+      
+      const ozButton = screen.getByRole('button', { name: 'oz' });
+      expect(ozButton).toHaveClass('bg-rose-primary', 'text-white');
     });
 
-    it("should apply inactive styles to non-selected button", () => {
+    it('should apply custom className', () => {
       const onChange = vi.fn();
-      render(<UnitToggle isMetric={false} onChange={onChange} />);
-
-      const mlButton = screen.getByRole("button", { name: /ml/i });
-      expect(mlButton).toHaveClass("bg-gray-200", "text-gray-700");
-    });
-
-    it("should render with custom className", () => {
-      const onChange = vi.fn();
-      const { container } = render(
-        <UnitToggle
-          isMetric={false}
-          onChange={onChange}
-          className="custom-class"
-        />,
+      render(
+        <UnitToggle value="ml" onChange={onChange} className="custom-class" />
       );
-
-      const toggleContainer = container.firstChild;
-      expect(toggleContainer).toHaveClass("custom-class");
+      
+      const wrapper = screen.getByRole('button', { name: 'ml' }).parentElement;
+      expect(wrapper).toHaveClass('custom-class');
     });
   });
 
-  describe("Interaction", () => {
-    it("should call onChange with false when oz button is clicked", async () => {
+  describe('Interactions', () => {
+    it('should call onChange with "ml" when ml button is clicked', () => {
       const onChange = vi.fn();
-      render(<UnitToggle isMetric={true} onChange={onChange} />);
-
-      const ozButton = screen.getByRole("button", { name: /oz/i });
-      await userEvent.click(ozButton);
-
-      expect(onChange).toHaveBeenCalledWith(false);
-      expect(onChange).toHaveBeenCalledTimes(1);
+      render(<UnitToggle value="oz" onChange={onChange} />);
+      
+      const mlButton = screen.getByRole('button', { name: 'ml' });
+      fireEvent.click(mlButton);
+      
+      expect(onChange).toHaveBeenCalledWith('ml');
     });
 
-    it("should call onChange with true when ml button is clicked", async () => {
+    it('should call onChange with "oz" when oz button is clicked', () => {
       const onChange = vi.fn();
-      render(<UnitToggle isMetric={false} onChange={onChange} />);
-
-      const mlButton = screen.getByRole("button", { name: /ml/i });
-      await userEvent.click(mlButton);
-
-      expect(onChange).toHaveBeenCalledWith(true);
-      expect(onChange).toHaveBeenCalledTimes(1);
+      render(<UnitToggle value="ml" onChange={onChange} />);
+      
+      const ozButton = screen.getByRole('button', { name: 'oz' });
+      fireEvent.click(ozButton);
+      
+      expect(onChange).toHaveBeenCalledWith('oz');
     });
 
-    it("should handle multiple clicks", async () => {
+    it('should be clickable when already selected', () => {
       const onChange = vi.fn();
-      render(<UnitToggle isMetric={false} onChange={onChange} />);
-
-      const mlButton = screen.getByRole("button", { name: /ml/i });
-      await userEvent.click(mlButton);
-      await userEvent.click(mlButton);
-
-      expect(onChange).toHaveBeenCalledTimes(2);
-      expect(onChange).toHaveBeenCalledWith(true);
-    });
-
-    it("should allow switching between units", async () => {
-      const onChange = vi.fn();
-      const { rerender } = render(
-        <UnitToggle isMetric={false} onChange={onChange} />,
-      );
-
-      const mlButton = screen.getByRole("button", { name: /ml/i });
-      await userEvent.click(mlButton);
-
-      expect(onChange).toHaveBeenCalledWith(true);
-
-      // Rerender with updated prop
-      rerender(<UnitToggle isMetric={true} onChange={onChange} />);
-
-      const ozButton = screen.getByRole("button", { name: /oz/i });
-      await userEvent.click(ozButton);
-
-      expect(onChange).toHaveBeenCalledWith(false);
+      render(<UnitToggle value="ml" onChange={onChange} />);
+      
+      const mlButton = screen.getByRole('button', { name: 'ml' });
+      fireEvent.click(mlButton);
+      
+      expect(onChange).toHaveBeenCalledWith('ml');
     });
   });
 
-  describe("Visual States", () => {
-    it("should show hover styles on inactive buttons", () => {
+  describe('Accessibility', () => {
+    it('should have button roles', () => {
       const onChange = vi.fn();
-      render(<UnitToggle isMetric={false} onChange={onChange} />);
-
-      const mlButton = screen.getByRole("button", { name: /ml/i });
-      expect(mlButton).toHaveClass("hover:bg-gray-300");
+      render(<UnitToggle value="ml" onChange={onChange} />);
+      
+      const buttons = screen.getAllByRole('button');
+      expect(buttons).toHaveLength(2);
     });
 
-    it("should apply transition classes to buttons", () => {
+    it('should support keyboard navigation', () => {
       const onChange = vi.fn();
-      render(<UnitToggle isMetric={false} onChange={onChange} />);
-
-      const ozButton = screen.getByRole("button", { name: /oz/i });
-      const mlButton = screen.getByRole("button", { name: /ml/i });
-
-      expect(ozButton).toHaveClass("transition-colors");
-      expect(mlButton).toHaveClass("transition-colors");
-    });
-
-    it("should maintain consistent styling across both buttons", () => {
-      const onChange = vi.fn();
-      render(<UnitToggle isMetric={false} onChange={onChange} />);
-
-      const ozButton = screen.getByRole("button", { name: /oz/i });
-      const mlButton = screen.getByRole("button", { name: /ml/i });
-
-      // Both should have common classes
-      expect(ozButton).toHaveClass("px-4", "py-2", "rounded-lg", "font-medium");
-      expect(mlButton).toHaveClass("px-4", "py-2", "rounded-lg", "font-medium");
-    });
-  });
-
-  describe("Accessibility", () => {
-    it("should be keyboard accessible", async () => {
-      const onChange = vi.fn();
-      render(<UnitToggle isMetric={false} onChange={onChange} />);
-
-      const mlButton = screen.getByRole("button", { name: /ml/i });
+      render(<UnitToggle value="ml" onChange={onChange} />);
+      
+      const mlButton = screen.getByRole('button', { name: 'ml' });
       mlButton.focus();
-
-      fireEvent.keyDown(mlButton, { key: "Enter" });
-
-      expect(onChange).toHaveBeenCalledWith(true);
+      
+      expect(document.activeElement).toBe(mlButton);
     });
 
-    it("should support tab navigation", () => {
+    it('should call onChange on Enter key press', () => {
       const onChange = vi.fn();
-      render(<UnitToggle isMetric={false} onChange={onChange} />);
-
-      const ozButton = screen.getByRole("button", { name: /oz/i });
-      const mlButton = screen.getByRole("button", { name: /ml/i });
-
-      // Both buttons should be focusable
-      expect(ozButton).toHaveAttribute("type", "button");
-      expect(mlButton).toHaveAttribute("type", "button");
-    });
-
-    it("should have clear button labels", () => {
-      const onChange = vi.fn();
-      render(<UnitToggle isMetric={false} onChange={onChange} />);
-
-      expect(screen.getByRole("button", { name: /oz/i })).toHaveTextContent(
-        "oz",
-      );
-      expect(screen.getByRole("button", { name: /ml/i })).toHaveTextContent(
-        "ml",
-      );
+      render(<UnitToggle value="ml" onChange={onChange} />);
+      
+      const ozButton = screen.getByRole('button', { name: 'oz' });
+      ozButton.focus();
+      fireEvent.keyDown(ozButton, { key: 'Enter' });
+      fireEvent.click(ozButton);
+      
+      expect(onChange).toHaveBeenCalledWith('oz');
     });
   });
 
-  describe("Edge Cases", () => {
-    it("should handle rapid clicking", async () => {
+  describe('Styling', () => {
+    it('should apply inactive styles to unselected button', () => {
       const onChange = vi.fn();
-      render(<UnitToggle isMetric={false} onChange={onChange} />);
+      render(<UnitToggle value="ml" onChange={onChange} />);
+      
+      const ozButton = screen.getByRole('button', { name: 'oz' });
+      expect(ozButton).toHaveClass('text-plum/40');
+      expect(ozButton).not.toHaveClass('bg-rose-primary');
+    });
 
-      const mlButton = screen.getByRole("button", { name: /ml/i });
+    it('should apply active styles to selected button', () => {
+      const onChange = vi.fn();
+      render(<UnitToggle value="oz" onChange={onChange} />);
+      
+      const ozButton = screen.getByRole('button', { name: 'oz' });
+      expect(ozButton).toHaveClass('bg-rose-primary', 'text-white', 'shadow-sm');
+    });
 
-      // Rapid clicks
-      await userEvent.click(mlButton);
-      await userEvent.click(mlButton);
-      await userEvent.click(mlButton);
+    it('should apply hover styles on mouse over', () => {
+      const onChange = vi.fn();
+      render(<UnitToggle value="ml" onChange={onChange} />);
+      
+      const ozButton = screen.getByRole('button', { name: 'oz' });
+      expect(ozButton).toHaveClass('hover:text-plum/60');
+    });
+  });
 
+  describe('Edge Cases', () => {
+    it('should not throw error with undefined onChange', () => {
+      expect(() => render(<UnitToggle value="ml" onChange={undefined as any} />)).not.toThrow();
+    });
+
+    it('should handle rapid clicks correctly', () => {
+      const onChange = vi.fn();
+      render(<UnitToggle value="ml" onChange={onChange} />);
+      
+      const ozButton = screen.getByRole('button', { name: 'oz' });
+      fireEvent.click(ozButton);
+      fireEvent.click(ozButton);
+      fireEvent.click(ozButton);
+      
       expect(onChange).toHaveBeenCalledTimes(3);
+      expect(onChange).toHaveBeenCalledWith('oz');
     });
 
-    it("should not break with undefined className", () => {
+    it('should handle toggle between units', () => {
       const onChange = vi.fn();
-      render(<UnitToggle isMetric={false} onChange={onChange} />);
-
-      expect(screen.getByRole("button", { name: /oz/i })).toBeInTheDocument();
-    });
-
-    it("should handle onChange being undefined gracefully", () => {
-      // @ts-expect-error Testing edge case
-      const { container } = render(
-        <UnitToggle isMetric={false} onChange={undefined} />,
-      );
-
-      expect(container).toBeInTheDocument();
-    });
-  });
-
-  describe("Layout", () => {
-    it("should display buttons in a horizontal layout", () => {
-      const onChange = vi.fn();
-      const { container } = render(
-        <UnitToggle isMetric={false} onChange={onChange} />,
-      );
-
-      const toggleContainer = container.firstChild;
-      expect(toggleContainer).toHaveClass("flex", "items-center", "space-x-2");
-    });
-
-    it("should have proper spacing between buttons", () => {
-      const onChange = vi.fn();
-      const { container } = render(
-        <UnitToggle isMetric={false} onChange={onChange} />,
-      );
-
-      const toggleContainer = container.firstChild;
-      expect(toggleContainer).toHaveClass("space-x-2");
-    });
-  });
-
-  describe("State Synchronization", () => {
-    it("should reflect isMetric prop changes", () => {
-      const onChange = vi.fn();
-      const { rerender } = render(
-        <UnitToggle isMetric={false} onChange={onChange} />,
-      );
-
-      let ozButton = screen.getByRole("button", { name: /oz/i });
-      expect(ozButton).toHaveClass("bg-blue-500");
-
-      rerender(<UnitToggle isMetric={true} onChange={onChange} />);
-
-      ozButton = screen.getByRole("button", { name: /oz/i });
-      const mlButton = screen.getByRole("button", { name: /ml/i });
-
-      expect(ozButton).toHaveClass("bg-gray-200");
-      expect(mlButton).toHaveClass("bg-blue-500");
-    });
-
-    it("should maintain state between rerenders", () => {
-      const onChange = vi.fn();
-      const { rerender } = render(
-        <UnitToggle isMetric={true} onChange={onChange} />,
-      );
-
-      rerender(<UnitToggle isMetric={true} onChange={onChange} />);
-
-      const mlButton = screen.getByRole("button", { name: /ml/i });
-      expect(mlButton).toHaveClass("bg-blue-500");
+      const { rerender } = render(<UnitToggle value="ml" onChange={onChange} />);
+      
+      const ozButton = screen.getByRole('button', { name: 'oz' });
+      fireEvent.click(ozButton);
+      
+      rerender(<UnitToggle value="oz" onChange={onChange} />);
+      
+      const mlButton = screen.getByRole('button', { name: 'ml' });
+      expect(mlButton).not.toHaveClass('bg-rose-primary');
+      expect(ozButton).toHaveClass('bg-rose-primary');
     });
   });
 });

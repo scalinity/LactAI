@@ -1,26 +1,67 @@
-import { useState, useRef, useCallback, type KeyboardEvent } from "react";
+import {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  type KeyboardEvent,
+} from "react";
 import { cn } from "@/lib/utils";
 import { ArrowUp, Plus, X } from "lucide-react";
 import type { ChatImageData } from "@/types/chat";
+import PromptStarters from "./PromptStarters";
+import toast from "react-hot-toast";
+import { useTranslation } from "@/i18n";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB
+
+export interface ExternalPrompt {
+  text: string;
+  key: number;
+}
 
 interface ChatInputProps {
   onSend: (message: string, image?: ChatImageData) => void;
   disabled?: boolean;
   className?: string;
+  externalPrompt?: ExternalPrompt | null;
+  showStarters?: boolean;
+  onStarterSelect?: (prompt: string) => void;
 }
 
 export default function ChatInput({
   onSend,
   disabled = false,
   className,
+  externalPrompt,
+  showStarters = false,
+  onStarterSelect,
 }: ChatInputProps) {
+  const { t } = useTranslation();
   const [text, setText] = useState("");
   const [image, setImage] = useState<ChatImageData | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const prevImagePreviewRef = useRef<string | null>(null);
+
+  // Cleanup previous image preview URL when it changes, and on unmount
+  useEffect(() => {
+    // Revoke the previous URL if it changed
+    if (
+      prevImagePreviewRef.current &&
+      prevImagePreviewRef.current !== imagePreview
+    ) {
+      URL.revokeObjectURL(prevImagePreviewRef.current);
+    }
+    prevImagePreviewRef.current = imagePreview;
+
+    return () => {
+      if (prevImagePreviewRef.current) {
+        URL.revokeObjectURL(prevImagePreviewRef.current);
+        prevImagePreviewRef.current = null;
+      }
+    };
+  }, [imagePreview]);
 
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current;
@@ -30,19 +71,39 @@ export default function ChatInput({
     }
   }, []);
 
+  // Handle external text injection (from prompt starters).
+  // Keyed by externalPrompt.key so the same prompt can be selected twice.
+  useEffect(() => {
+    if (!externalPrompt) return;
+    setText(externalPrompt.text);
+
+    // Focus the textarea and try to select the first [placeholder]
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (!el) return;
+      el.focus();
+      adjustHeight();
+
+      const match = externalPrompt.text.match(/\[([^\]]+)\]/);
+      if (match && match.index !== undefined) {
+        el.setSelectionRange(match.index, match.index + match[0].length);
+      }
+    });
+  }, [externalPrompt?.key, adjustHeight]);
+
   const handleImageSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
 
       if (file.size > MAX_IMAGE_BYTES) {
-        alert("Image must be under 10MB");
+        toast.error(t("chat.imageTooLarge"));
         return;
       }
 
       const mime = file.type as ChatImageData["mime_type"];
       if (!["image/jpeg", "image/png", "image/webp"].includes(mime)) {
-        alert("Only JPEG, PNG, and WebP images are supported");
+        toast.error(t("chat.unsupportedFormat"));
         return;
       }
 
@@ -58,14 +119,14 @@ export default function ChatInput({
       // Reset file input so same file can be re-selected
       if (fileInputRef.current) fileInputRef.current.value = "";
     },
-    [],
+    [t],
   );
 
   const clearImage = useCallback(() => {
-    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    // URL cleanup handled by useEffect tracking prevImagePreviewRef
     setImage(null);
     setImagePreview(null);
-  }, [imagePreview]);
+  }, []);
 
   const handleSend = () => {
     const trimmed = text.trim();
@@ -88,12 +149,10 @@ export default function ChatInput({
   const canSend = (text.trim() || image) && !disabled;
 
   return (
-    <div
-      className={cn(
-        "bg-cream p-3 pb-6 border-t border-plum/10",
-        className,
+    <div className={cn("bg-cream p-3 pb-6 border-t border-plum/10", className)}>
+      {showStarters && onStarterSelect && (
+        <PromptStarters onSelect={onStarterSelect} />
       )}
-    >
       {/* Image preview */}
       {imagePreview && (
         <div className="mb-2 inline-flex items-start gap-1">
@@ -140,10 +199,12 @@ export default function ChatInput({
             adjustHeight();
           }}
           onKeyDown={handleKeyDown}
-          placeholder={image ? "Add a message or send the image..." : "Ask anything about your journey..."}
+          placeholder={
+            image ? t("chat.addMessageOrSend") : t("chat.askAnything")
+          }
           disabled={disabled}
           rows={1}
-          className="flex-1 resize-none rounded-xl bg-white border border-plum/10 px-3 py-2 text-sm text-plum placeholder:text-plum/40 outline-none focus:ring-2 focus:ring-rose-primary/50 disabled:opacity-50"
+          className="flex-1 resize-none rounded-xl bg-surface border border-plum/10 px-3 py-2 text-sm text-plum placeholder:text-plum/40 outline-none focus:ring-2 focus:ring-rose-primary/50 disabled:opacity-50"
         />
         <button
           type="button"

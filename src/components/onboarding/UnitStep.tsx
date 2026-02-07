@@ -1,22 +1,23 @@
 import { useAppStore } from "@/stores/useAppStore";
 import OnboardingIllustration from "./OnboardingIllustration";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/i18n";
 
 export default function UnitStep() {
+  const { t } = useTranslation();
   const { preferredUnit, setPreferredUnit } = useAppStore();
 
   return (
     <div className="flex flex-col items-center text-center">
       <OnboardingIllustration stepIndex={5} />
       <h2 className="mt-8 font-[Nunito] text-2xl font-bold text-plum">
-        Elige tu unidad
+        {t("unitStep.chooseUnit")}
       </h2>
       <p className="mt-3 max-w-xs text-sm leading-relaxed text-plum-light">
-        Selecciona cómo prefieres ver tus cantidades. Puedes cambiar esto cuando
-        quieras en Ajustes.
+        {t("unitStep.chooseUnitDesc")}
       </p>
 
-      <div className="mt-8 flex items-center rounded-xl bg-white p-1.5 shadow-md">
+      <div className="mt-8 flex items-center rounded-xl bg-surface p-1.5 shadow-md">
         <button
           type="button"
           onClick={() => setPreferredUnit("ml")}
@@ -44,7 +45,9 @@ export default function UnitStep() {
       </div>
 
       <p className="mt-3 text-xs text-plum/30">
-        {preferredUnit === "ml" ? "Mililitros" : "Onzas líquidas"}
+        {preferredUnit === "ml"
+          ? t("unitStep.milliliters")
+          : t("unitStep.fluidOunces")}
       </p>
     </div>
   );

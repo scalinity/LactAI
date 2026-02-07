@@ -2,17 +2,27 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://scalintiy.cloud https://*.scalintiy.cloud https://claudiaflow-api.claudiaflow.workers.dev http://localhost:*; object-src 'none'; base-uri 'self'; form-action 'self';" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#E8A0BF" />
+    <meta name="theme-color" content="#E8A0BF" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1c1520" media="(prefers-color-scheme: dark)" />
     <meta name="description" content="Track and understand your breast milk expression journey" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>ClaudiaFlow</title>
+    <script>
+      // Apply theme before first paint to prevent flash
+      try {
+        var s = JSON.parse(localStorage.getItem('claudia-theme-storage') || '{}');
+        var m = s && s.state && s.state.mode;
+        var dark = m === 'dark' || (m !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+      } catch(e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

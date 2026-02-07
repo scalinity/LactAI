@@ -13,6 +13,7 @@ import {
   PanelLeftOpen,
   PanelLeftClose,
 } from "lucide-react";
+import { useTranslation } from "@/i18n";
 
 export default function ChatPage() {
   const { threadId: urlThreadId } = useParams<{ threadId: string }>();
@@ -20,6 +21,7 @@ export default function ChatPage() {
   const threads = useChatThreads();
   const { createThread } = useChatActions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { t } = useTranslation();
 
   // Sync URL param to store
   useEffect(() => {
@@ -42,7 +44,7 @@ export default function ChatPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-plum shadow-sm transition-colors hover:bg-cream-dark lg:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface text-plum shadow-sm transition-colors hover:bg-cream-dark lg:hidden"
           >
             {sidebarOpen ? (
               <PanelLeftClose className="h-5 w-5" />
@@ -51,7 +53,7 @@ export default function ChatPage() {
             )}
           </button>
           <h1 className="font-[Nunito] text-xl font-bold text-plum">
-            Ask ClaudiaFlow
+            {t("chat.askClaudiaFlow")}
           </h1>
         </div>
         <div className="flex items-center gap-2">
@@ -94,17 +96,17 @@ export default function ChatPage() {
           {activeThreadId ? (
             <ChatContainer />
           ) : (
-            <div className="flex flex-1 items-center justify-center p-4">
+            <div className="flex flex-1 items-center justify-center p-4 pb-24">
               <EmptyState
                 icon={<MessageCircle className="h-12 w-12 text-plum-light" />}
-                title="Start a conversation"
-                description="Ask ClaudiaFlow about your pumping patterns, get tips, or analyze your data."
+                title={t("chat.startConversation")}
+                description={t("chat.startConversationDescLong")}
               >
                 <button
                   onClick={handleNewThread}
                   className="mt-4 rounded-xl bg-rose-primary px-6 py-3 font-[Nunito] font-bold text-white shadow-md transition-transform active:scale-[0.98]"
                 >
-                  New Conversation
+                  {t("chat.newConversation")}
                 </button>
               </EmptyState>
             </div>

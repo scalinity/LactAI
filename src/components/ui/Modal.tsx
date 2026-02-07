@@ -45,7 +45,7 @@ export default function Modal({
     >
       <div
         className={cn(
-          "w-full max-w-md rounded-xl bg-white shadow-lg animate-in zoom-in-95 duration-150",
+          "w-full max-w-md rounded-xl bg-surface shadow-lg animate-in zoom-in-95 duration-150",
           className,
         )}
       >
@@ -56,6 +56,7 @@ export default function Modal({
             </h2>
             <button
               onClick={onClose}
+              aria-label="Close dialog"
               className="rounded-lg p-1 text-plum/50 hover:bg-plum/5 hover:text-plum transition-colors"
             >
               <X className="h-5 w-5" />

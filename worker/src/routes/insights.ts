@@ -7,14 +7,11 @@ import {
 } from "../lib/openrouter";
 import { getInsightsSystemPrompt } from "../lib/prompts";
 import { InsightsRequestSchema } from "../lib/schemas";
-import {
-  deviceIdMiddleware,
-  dailyBudgetMiddleware,
-} from "../middleware/rate-limit";
+import { deviceIdMiddleware } from "../middleware/rate-limit";
 
 const insightsApp = new Hono<{ Bindings: Env }>();
 
-insightsApp.use("*", deviceIdMiddleware, dailyBudgetMiddleware);
+insightsApp.use("*", deviceIdMiddleware);
 
 insightsApp.post("/", async (c) => {
   const requestId = crypto.randomUUID();
@@ -84,7 +81,7 @@ insightsApp.post("/", async (c) => {
       return c.json(
         {
           error: "UPSTREAM_ERROR",
-          message: err.message,
+          message: "AI service temporarily unavailable",
           request_id: requestId,
         },
         502,

@@ -7,13 +7,21 @@ interface ThemeState {
   mode: ThemeMode;
   resolvedTheme: 'light' | 'dark';
   setMode: (mode: ThemeMode) => void;
-  updateResolvedTheme: () => void;
+  initThemeListener: () => () => void;
 }
 
 const getSystemTheme = (): 'light' | 'dark' => {
   if (typeof window === 'undefined') return 'light';
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 };
+
+function applyTheme(resolved: 'light' | 'dark') {
+  if (resolved === 'dark') {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+}
 
 export const useThemeStore = create<ThemeState>()(
   persist(
@@ -22,21 +30,30 @@ export const useThemeStore = create<ThemeState>()(
       resolvedTheme: getSystemTheme(),
       
       setMode: (mode: ThemeMode) => {
-        set({ mode });
-        get().updateResolvedTheme();
+        const resolved = mode === 'system' ? getSystemTheme() : mode;
+        set({ mode, resolvedTheme: resolved });
+        applyTheme(resolved);
       },
       
-      updateResolvedTheme: () => {
+      initThemeListener: () => {
+        const handler = () => {
+          const { mode } = get();
+          if (mode === 'system') {
+            const resolved = getSystemTheme();
+            set({ resolvedTheme: resolved });
+            applyTheme(resolved);
+          }
+        };
+        const mql = window.matchMedia('(prefers-color-scheme: dark)');
+        mql.addEventListener('change', handler);
+
+        // Apply on init - recalculate for system mode
         const { mode } = get();
         const resolved = mode === 'system' ? getSystemTheme() : mode;
         set({ resolvedTheme: resolved });
-        
-        // Apply theme to document
-        if (resolved === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
+        applyTheme(resolved);
+
+        return () => mql.removeEventListener('change', handler);
       },
     }),
     {
@@ -44,13 +61,3 @@ export const useThemeStore = create<ThemeState>()(
     }
   )
 );
-
-// Listen for system theme changes
-if (typeof window !== 'undefined') {
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    const store = useThemeStore.getState();
-    if (store.mode === 'system') {
-      store.updateResolvedTheme();
-    }
-  });
-}

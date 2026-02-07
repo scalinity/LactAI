@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useAppStore } from "@/stores/useAppStore";
 import { Heart } from "lucide-react";
-import { UnitToggle } from "./ui/UnitToggle";
+import { UnitToggle } from "@/components/ui/UnitToggle";
 
 export default function WelcomeLetter() {
   const hasCompletedOnboarding = useAppStore((s) => s.hasCompletedOnboarding);
@@ -15,12 +15,27 @@ export default function WelcomeLetter() {
   const [fadeOut, setFadeOut] = useState(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    // ?reset brings the welcome letter back (resets onboarding state)
+    if (params.has("reset")) {
+      setHasCompletedOnboarding(false);
+      localStorage.removeItem("claudiaflow-tutorial-seen");
+      window.history.replaceState({}, "", window.location.pathname);
+      return;
+    }
+
     if (!hasCompletedOnboarding) {
+      // ?setup param skips the letter (for importing data before gifting)
+      // Does NOT mark onboarding complete, so the letter shows on the next normal visit
+      if (params.has("setup")) {
+        return;
+      }
       // Small delay so the app shell renders first
       const t = setTimeout(() => setVisible(true), 300);
       return () => clearTimeout(t);
     }
-  }, [hasCompletedOnboarding]);
+  }, [hasCompletedOnboarding, setHasCompletedOnboarding]);
 
   // Lock body scroll while overlay is visible
   useEffect(() => {
@@ -56,10 +71,9 @@ export default function WelcomeLetter() {
       role="dialog"
       aria-modal="true"
       aria-label="Welcome letter from Daniel"
-      className={`fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-500 ${
+      className={`fixed inset-0 z-[100] flex items-center justify-center bg-plum/60 transition-opacity duration-500 ${
         fadeOut ? "opacity-0" : "opacity-100"
       }`}
-      style={{ backgroundColor: "rgba(61, 44, 62, 0.6)" }}
     >
       <div
         className={`relative mx-3 flex max-h-[92vh] w-full max-w-md flex-col overflow-hidden rounded-2xl shadow-2xl transition-all duration-700 ${
@@ -67,7 +81,7 @@ export default function WelcomeLetter() {
         }`}
         style={{
           background:
-            "linear-gradient(170deg, var(--color-cream) 0%, var(--color-cream-dark) 40%, #f2e8dc 100%)",
+            "linear-gradient(170deg, var(--color-cream) 0%, var(--color-cream-dark) 40%, var(--color-cream-dark) 100%)",
         }}
       >
         {/* Decorative top accent */}
@@ -168,10 +182,7 @@ export default function WelcomeLetter() {
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-plum-light">
               Preferred unit
             </p>
-            <UnitToggle
-              isMetric={preferredUnit === "ml"}
-              onChange={(isMetric) => setPreferredUnit(isMetric ? "ml" : "oz")}
-            />
+            <UnitToggle value={preferredUnit} onChange={setPreferredUnit} />
           </div>
 
           <button

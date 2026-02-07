@@ -4,6 +4,7 @@ export type Env = {
   OPENROUTER_BASE_URL: string;
   VISION_MODEL: string;
   CHAT_MODEL: string;
+  TITLE_MODEL?: string;
   INSIGHTS_MODEL: string;
   MAX_IMAGE_SIZE_BYTES: string;
   MAX_TOKENS_VISION: string;
@@ -12,6 +13,7 @@ export type Env = {
   MAX_DAILY_REQUESTS_PER_DEVICE: string;
   APP_REFERER: string;
   APP_TITLE: string;
+  ENVIRONMENT?: string;
 };
 
 export interface VisionEntry {

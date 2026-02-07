@@ -1,20 +1,26 @@
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, useState } from "react";
 import { useChatMessages } from "@/db/hooks";
 import { useChatStore } from "@/stores/useChatStore";
 import { useChatActions } from "@/hooks/useChatMessages";
 import MessageBubble from "./MessageBubble";
-import ChatInput from "./ChatInput";
+import ChatInput, { type ExternalPrompt } from "./ChatInput";
 import Spinner from "@/components/ui/Spinner";
 import EmptyState from "@/components/ui/EmptyState";
 import { MessageCircle } from "lucide-react";
 import type { ChatImageData } from "@/types/chat";
+import { cn } from "@/lib/utils";
+import { useTranslation } from "@/i18n";
 
 export default function ChatContainer() {
+  const { t } = useTranslation();
   const { activeThreadId, isStreaming, streamingContent } = useChatStore();
   const messages = useChatMessages(activeThreadId ?? undefined);
   const { sendMessage, createThread } = useChatActions();
   const scrollRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
+  const [pendingPrompt, setPendingPrompt] = useState<ExternalPrompt | null>(
+    null,
+  );
 
   const checkNearBottom = useCallback(() => {
     const el = scrollRef.current;
@@ -30,31 +36,46 @@ export default function ChatContainer() {
   }, [messages, streamingContent]);
 
   const handleSend = async (content: string, image?: ChatImageData) => {
-    if (!activeThreadId) {
-      await createThread(content);
+    let threadId = activeThreadId;
+    if (!threadId) {
+      threadId = await createThread(content);
     }
-    await sendMessage(content, image);
+    await sendMessage(content, image, threadId);
   };
 
+  const isEmpty = !messages || messages.length === 0;
+
+  const handlePromptSelect = useCallback((prompt: string) => {
+    setPendingPrompt((prev) => ({ text: prompt, key: (prev?.key ?? 0) + 1 }));
+  }, []);
+
   return (
-    <div className="flex h-[calc(100vh-140px)] flex-col">
+    <div
+      className={cn(
+        "flex h-[calc(100vh-140px-env(safe-area-inset-bottom)-4rem)] flex-col",
+        isEmpty && "justify-center",
+      )}
+    >
       <div
         ref={scrollRef}
         onScroll={checkNearBottom}
-        className="flex-1 overflow-y-auto px-3 py-4 space-y-3"
+        className={cn(
+          "overflow-y-auto px-3 py-4 space-y-3",
+          !isEmpty && "flex-1",
+        )}
       >
-        {!messages || messages.length === 0 ? (
+        {isEmpty ? (
           <EmptyState
             icon={MessageCircle}
-            title="Start a conversation"
-            description="Ask questions about your data, get tips, or just chat."
+            title={t("chat.startConversation")}
+            description={t("chat.startConversationDesc")}
           />
         ) : (
           messages.map((msg) => <MessageBubble key={msg.id} message={msg} />)
         )}
         {isStreaming && streamingContent && (
           <div className="flex flex-col gap-1 items-start">
-            <div className="max-w-[92%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap bg-white text-plum shadow-sm border border-plum/5 rounded-bl-md">
+            <div className="max-w-[92%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap bg-surface text-plum shadow-sm border border-plum/5 rounded-bl-md">
               {streamingContent}
               <span className="inline-block w-1.5 h-4 ml-0.5 bg-rose-primary/60 animate-pulse rounded-sm align-text-bottom" />
             </div>
@@ -63,11 +84,18 @@ export default function ChatContainer() {
         {isStreaming && !streamingContent && (
           <div className="flex items-center gap-2 px-2">
             <Spinner size="sm" />
-            <span className="text-xs text-plum/40">Thinking...</span>
+            <span className="text-xs text-plum/40">{t("chat.thinking")}</span>
           </div>
         )}
       </div>
-      <ChatInput onSend={handleSend} disabled={isStreaming} />
+      <ChatInput
+        onSend={handleSend}
+        disabled={isStreaming}
+        externalPrompt={pendingPrompt}
+        className="mt-auto"
+        showStarters={isEmpty}
+        onStarterSelect={handlePromptSelect}
+      />
     </div>
   );
 }

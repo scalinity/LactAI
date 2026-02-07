@@ -54,10 +54,10 @@ export default function OnboardingIllustration({
         <>
           <Scale className="h-14 w-14 text-rose-primary" />
           <div className="absolute bottom-4 flex gap-1">
-            <span className="rounded-md bg-white px-2 py-0.5 text-xs font-bold text-plum shadow-sm">
+            <span className="rounded-md bg-surface px-2 py-0.5 text-xs font-bold text-plum shadow-sm">
               ml
             </span>
-            <span className="rounded-md bg-white px-2 py-0.5 text-xs font-bold text-plum shadow-sm">
+            <span className="rounded-md bg-surface px-2 py-0.5 text-xs font-bold text-plum shadow-sm">
               oz
             </span>
           </div>

@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes } from "react";
+import { forwardRef, useId, type InputHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -9,7 +9,8 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helperText, className, id, ...props }, ref) => {
-    const inputId = id || label?.toLowerCase().replace(/\s+/g, "-");
+    const generatedId = useId();
+    const inputId = id || generatedId;
 
     return (
       <div className="flex flex-col gap-1.5">
@@ -25,7 +26,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={cn(
-            "rounded-xl bg-white px-3.5 py-2.5 text-plum placeholder:text-plum/30 outline-none transition-all border border-plum/[0.06] focus:ring-2 focus:ring-rose-primary/40 focus:border-rose-primary/30",
+            "rounded-xl bg-surface px-3.5 py-2.5 text-plum placeholder:text-plum/30 outline-none transition-all border border-plum/[0.06] focus:ring-2 focus:ring-rose-primary/40 focus:border-rose-primary/30",
             error && "ring-2 ring-red-400 border-red-400",
             className,
           )}

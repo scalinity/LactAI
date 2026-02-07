@@ -5,6 +5,11 @@ import { Toaster } from "react-hot-toast";
 import App from "./App";
 import "./index.css";
 
+// Catch unhandled promise rejections globally
+window.addEventListener("unhandledrejection", (event) => {
+  console.error("Unhandled promise rejection:", event.reason);
+});
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>

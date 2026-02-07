@@ -17,6 +17,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "@/i18n";
 
 type Step = "upload" | "processing" | "review" | "done";
 
@@ -36,6 +37,7 @@ export default function PhotoImportPage() {
   const [processingTotal, setProcessingTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [importedCount, setImportedCount] = useState(0);
+  const { t } = useTranslation();
 
   const handleFilesSelected = useCallback((selectedFiles: File[]) => {
     setFiles((prev) => [...prev, ...selectedFiles]);
@@ -65,8 +67,8 @@ export default function PhotoImportPage() {
         setProcessingIndex(i + 1);
         try {
           const result = await extractFromImage(
-            processed[i].base64,
-            processed[i].mimeType,
+            processed[i].photo!.base64,
+            processed[i].photo!.mimeType,
             {
               timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
               preferred_unit: "ml",
@@ -148,6 +150,7 @@ export default function PhotoImportPage() {
   }, [reviewRows]);
 
   const duplicateCount = reviewRows.filter((r) => r.hasDuplicate).length;
+  const acceptedCount = reviewRows.filter((r) => r.accepted).length;
 
   return (
     <div className="animate-page-enter mx-auto max-w-lg px-4 pt-6 pb-8">
@@ -155,12 +158,12 @@ export default function PhotoImportPage() {
       <div className="mb-6 flex items-center gap-3">
         <Link
           to="/"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-plum/60 shadow-sm transition-all hover:bg-plum/5 hover:text-plum active:scale-95"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-surface text-plum/60 shadow-sm transition-all hover:bg-plum/5 hover:text-plum active:scale-95"
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <h1 className="font-[Nunito] text-2xl font-bold text-plum">
-          Import from Photos
+          {t("photos.importFromPhotos")}
         </h1>
       </div>
 
@@ -175,7 +178,7 @@ export default function PhotoImportPage() {
                 {files.map((file, i) => (
                   <div
                     key={`${file.name}-${i}`}
-                    className="flex items-center gap-3 rounded-xl border border-plum/10 bg-white p-2"
+                    className="flex items-center gap-3 rounded-xl border border-plum/10 bg-surface p-2"
                   >
                     <div className="h-12 w-12 rounded-lg bg-cream-dark flex items-center justify-center">
                       <Camera className="h-5 w-5 text-plum/40" />
@@ -203,7 +206,7 @@ export default function PhotoImportPage() {
                 onClick={startProcessing}
                 className="w-full rounded-xl bg-rose-primary px-6 py-3 font-[Nunito] font-bold text-white shadow-md transition-transform active:scale-[0.98]"
               >
-                Process {files.length} {files.length === 1 ? "Photo" : "Photos"}
+                {t("photos.processPhotos", { count: files.length })}
               </button>
             </>
           )}
@@ -218,8 +221,8 @@ export default function PhotoImportPage() {
           {files.length === 0 && (
             <EmptyState
               icon={<Camera className="h-12 w-12 text-plum-light" />}
-              title="Upload pump screen photos"
-              description="Take photos of your pump display and we'll extract the session data automatically."
+              title={t("photos.uploadPumpPhotos")}
+              description={t("photos.uploadPumpPhotosDesc")}
             />
           )}
         </div>
@@ -233,17 +236,21 @@ export default function PhotoImportPage() {
             <Loader2 className="relative h-12 w-12 animate-spin text-rose-primary" />
           </div>
           <p className="mt-6 font-[Nunito] text-lg font-semibold text-plum">
-            Processing photos...
+            {t("photos.processingPhotos")}
           </p>
           <p className="mt-1 text-sm text-plum-light/70">
-            {processingIndex} of {processingTotal} complete
+            {t("photos.processingProgress", {
+              current: processingIndex,
+              total: processingTotal,
+            })}
           </p>
           <div className="mt-4 h-2 w-48 overflow-hidden rounded-full bg-plum/[0.06]">
             <div
               className="h-full rounded-full transition-all duration-500 ease-out"
               style={{
                 width: `${processingTotal > 0 ? (processingIndex / processingTotal) * 100 : 0}%`,
-                background: "linear-gradient(90deg, #e8a0bf 0%, #c77da3 100%)",
+                background:
+                  "linear-gradient(90deg, var(--color-rose-primary) 0%, var(--color-rose-dark) 100%)",
               }}
             />
           </div>
@@ -257,9 +264,7 @@ export default function PhotoImportPage() {
             <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
               <p className="text-sm text-amber-800">
-                <strong>{duplicateCount}</strong> possible{" "}
-                {duplicateCount === 1 ? "duplicate" : "duplicates"} detected.
-                These have been unchecked by default.
+                {t("photos.duplicatesDetected", { count: duplicateCount })}
               </p>
             </div>
           )}
@@ -292,14 +297,14 @@ export default function PhotoImportPage() {
               }}
               className="flex-1 rounded-xl border-2 border-plum-light px-4 py-3 font-[Nunito] font-bold text-plum transition-colors hover:bg-cream-dark"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
             <button
               onClick={confirmImport}
-              disabled={reviewRows.filter((r) => r.accepted).length === 0}
+              disabled={acceptedCount === 0}
               className="flex-1 rounded-xl bg-rose-primary px-4 py-3 font-[Nunito] font-bold text-white shadow-md transition-transform active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
             >
-              Import {reviewRows.filter((r) => r.accepted).length} Entries
+              {t("photos.importEntries", { count: acceptedCount })}
             </button>
           </div>
         </div>
@@ -312,10 +317,10 @@ export default function PhotoImportPage() {
             <CheckCircle2 className="h-12 w-12 text-sage" />
           </div>
           <p className="mt-5 font-[Nunito] text-xl font-bold text-plum">
-            Import Complete
+            {t("photos.importComplete")}
           </p>
           <p className="mt-1 text-sm text-plum-light/70">
-            {importedCount} {importedCount === 1 ? "session" : "sessions"} added
+            {t("photos.sessionsAdded", { count: importedCount })}
           </p>
           <div className="mt-6 flex gap-3">
             <button
@@ -327,16 +332,17 @@ export default function PhotoImportPage() {
               }}
               className="rounded-xl border-2 border-plum/15 px-6 py-3 font-[Nunito] font-bold text-plum transition-all hover:bg-plum/5 active:scale-[0.98]"
             >
-              Import More
+              {t("photos.importMore")}
             </button>
             <button
               onClick={() => navigate("/history")}
               className="rounded-xl bg-rose-primary px-6 py-3 font-[Nunito] font-bold text-white shadow-md transition-all active:scale-[0.97]"
               style={{
-                background: "linear-gradient(135deg, #e8a0bf 0%, #c77da3 100%)",
+                background:
+                  "linear-gradient(135deg, var(--color-rose-primary) 0%, var(--color-rose-dark) 100%)",
               }}
             >
-              View History
+              {t("photos.viewHistory")}
             </button>
           </div>
         </div>

@@ -1,9 +1,16 @@
-import { useState, useEffect, useRef, type FormEvent, type KeyboardEvent } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "@/db";
 import { useSessionFormStore } from "@/stores/useSessionFormStore";
 import { useAppStore } from "@/stores/useAppStore";
 import { useSessionActions } from "@/hooks/useSessions";
+import { useTranslation } from "@/i18n";
 import AmountInput from "./AmountInput";
 import UnitToggle from "./UnitToggle";
 import TypeToggle from "./TypeToggle";
@@ -19,13 +26,23 @@ interface SessionFormProps {
 }
 
 export default function SessionForm({ sessionId, onSaved }: SessionFormProps) {
-  const { amount, unit, timestamp, side, sessionType, durationMin, notes, setField, reset } =
-    useSessionFormStore();
+  const { t } = useTranslation();
+  const {
+    amount,
+    unit,
+    timestamp,
+    side,
+    sessionType,
+    durationMin,
+    notes,
+    setField,
+    reset,
+  } = useSessionFormStore();
   const { preferredUnit } = useAppStore();
   const { createSession, updateSession } = useSessionActions();
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const existing = useLiveQuery(
     () => (sessionId ? db.sessions.get(sessionId) : undefined),
@@ -75,7 +92,7 @@ export default function SessionForm({ sessionId, onSaved }: SessionFormProps) {
           duration_min: durationMin,
           notes,
         });
-        setToast("Session updated");
+        setToast(t("log.sessionUpdated"));
       } else {
         await createSession({
           amount,
@@ -86,7 +103,7 @@ export default function SessionForm({ sessionId, onSaved }: SessionFormProps) {
           duration_min: durationMin,
           notes,
         });
-        setToast("Session saved");
+        setToast(t("log.sessionSaved"));
         reset();
         setField("unit", preferredUnit);
       }
@@ -115,7 +132,7 @@ export default function SessionForm({ sessionId, onSaved }: SessionFormProps) {
       className="space-y-6"
     >
       <div className="space-y-2">
-        <p className="text-sm font-medium text-plum">Type</p>
+        <p className="text-sm font-medium text-plum">{t("session.type")}</p>
         <TypeToggle
           value={sessionType}
           onChange={(v) => setField("sessionType", v)}
@@ -137,7 +154,7 @@ export default function SessionForm({ sessionId, onSaved }: SessionFormProps) {
       />
 
       <div className="space-y-2">
-        <p className="text-sm font-medium text-plum">Side</p>
+        <p className="text-sm font-medium text-plum">{t("session.side")}</p>
         <SideSelector value={side} onChange={(v) => setField("side", v)} />
       </div>
 
@@ -147,11 +164,13 @@ export default function SessionForm({ sessionId, onSaved }: SessionFormProps) {
       />
 
       <div className="space-y-1">
-        <label className="text-sm font-medium text-plum">Notes</label>
+        <label className="text-sm font-medium text-plum">
+          {t("session.notes")}
+        </label>
         <textarea
           value={notes}
           onChange={(e) => setField("notes", e.target.value)}
-          placeholder="Optional notes..."
+          placeholder={t("session.optionalNotes")}
           rows={2}
           className="w-full rounded-xl bg-cream px-3 py-2 text-sm text-plum placeholder:text-plum/40 outline-none border border-plum/10 focus:ring-2 focus:ring-rose-primary/50 resize-none"
         />
@@ -159,7 +178,7 @@ export default function SessionForm({ sessionId, onSaved }: SessionFormProps) {
 
       <Button type="submit" loading={saving} className="w-full" size="lg">
         <Check className="h-5 w-5" />
-        {sessionId ? "Update" : "Save"}
+        {sessionId ? t("common.update") : t("common.save")}
       </Button>
 
       {toast && (

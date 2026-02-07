@@ -79,19 +79,42 @@ cd worker && npx vitest run src/routes/chat.test.ts  # worker
 - **Fonts**: `Nunito` (display), `DM Sans` (body) loaded from Google Fonts.
 - **Tests**: Frontend uses vitest + jsdom + fake-indexeddb + MSW. Worker uses vitest + @cloudflare/vitest-pool-workers.
 - **API base URL**: Configured via `VITE_API_BASE_URL` env var, defaults to `http://localhost:8787`.
+- **i18n**: Custom lightweight system in `src/i18n/`. Two locales: English (`en.ts`) and Spanish (`es.ts`). `useTranslation()` hook returns `{ t, locale }`. Keys are type-safe dot-paths (e.g. `t("home.greetingMorning")`). Pluralization uses `_one`/`_other` suffixes with `count` variable. Interpolation via `{{var}}`. Locale stored in `useAppStore.locale` (persisted). Date formatting uses `date-fns` locale in `src/lib/utils.ts`. The `WelcomeLetter` component is intentionally not translated.
 
 ### Deployment
 
-**Frontend**: Hosted on a Hostinger VPS. SSH in, pull latest, and rebuild.
+#### Frontend (VPS)
+
+Hosted on a Hostinger VPS behind Traefik reverse proxy in Docker. SSH alias: `hostinger`.
+
+**Domain**: `scalintiy.cloud` (served via Traefik with auto TLS via Let's Encrypt)
+
+**Infrastructure**:
+
+- **Traefik** (in `/docker/n8n/`) handles TLS termination, HTTP->HTTPS redirect, and routing on ports 80/443
+- **nginx:alpine** container (`claudiaflow-app-1`) serves the static build
+- **Docker Compose** config: `/docker/claudiaflow/docker-compose.yml`
+- **Nginx config**: `/docker/claudiaflow/nginx.conf` (SPA fallback, gzip, asset caching)
+- **Web root**: `/var/www/claudiaflow/` (volume-mounted read-only into the container)
+- **Network**: container joins `n8n_default` Docker network for Traefik discovery
+
+**Deploy steps** (from local machine):
 
 ```bash
-ssh <user>@<hostinger-ip>     # SSH into VPS
-cd /path/to/claudiaflow       # Navigate to project
-git pull origin main           # Pull latest changes
-npm run build                  # Build frontend
+npm run build                                                          # 1. Build locally
+rsync -avz --delete dist/ hostinger:/var/www/claudiaflow/              # 2. Sync to VPS
+ssh hostinger "cd /docker/claudiaflow && sudo docker compose up -d --force-recreate"  # 3. Recreate container (picks up new files + any config changes)
 ```
 
-**Worker**: Deployed to Cloudflare Workers via `cd worker && npm run deploy`.
+Step 3 is only required if Docker/nginx config changed. For code-only deploys, steps 1-2 are sufficient since the volume mount serves files directly.
+
+**Verify**: `ssh hostinger "curl -sI -H 'Host: scalintiy.cloud' https://localhost --insecure"` should return HTTP 200.
+
+**IMPORTANT**: All frontend changes must be built and deployed to the VPS (`ssh hostinger`) after implementation. Never leave changes undeployed.
+
+#### Worker (Cloudflare)
+
+Deployed to Cloudflare Workers: `cd worker && npm run deploy`.
 
 ### Medical safety
 

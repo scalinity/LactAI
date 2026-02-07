@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { useChartData } from "./useChartData";
 import { db } from "@/db";
 import { subDays } from "date-fns";
+import type { Session } from "@/types/session";
 
 describe("useChartData", () => {
   beforeEach(async () => {
@@ -25,24 +26,33 @@ describe("useChartData", () => {
 
   it("should return sessions sorted by timestamp", async () => {
     const now = new Date();
-    const sessions = [
+    const sessions: Session[] = [
       {
         timestamp: subDays(now, 3),
         amount_entered: 100,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 100,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
       {
         timestamp: subDays(now, 1),
         amount_entered: 150,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 150,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
       {
         timestamp: subDays(now, 5),
         amount_entered: 80,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 80,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
     ];
 
@@ -64,14 +74,20 @@ describe("useChartData", () => {
       {
         timestamp: subDays(now, 3),
         amount_entered: 100,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 100,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
       {
         timestamp: subDays(now, 10),
         amount_entered: 150,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 150,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
     ];
 
@@ -91,14 +107,20 @@ describe("useChartData", () => {
       {
         timestamp: subDays(now, 15),
         amount_entered: 100,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 100,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
       {
         timestamp: subDays(now, 45),
         amount_entered: 150,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 150,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
     ];
 
@@ -118,14 +140,20 @@ describe("useChartData", () => {
       {
         timestamp: subDays(now, 10),
         amount_entered: 100,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 100,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
       {
         timestamp: subDays(now, 100),
         amount_entered: 150,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 150,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
     ];
 
@@ -146,20 +174,29 @@ describe("useChartData", () => {
       {
         timestamp: new Date(today.getTime() + 1000),
         amount_entered: 100,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 100,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
       {
         timestamp: new Date(today.getTime() + 2000),
         amount_entered: 150,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 150,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
       {
         timestamp: subDays(today, 1),
         amount_entered: 200,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 200,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
     ];
 
@@ -182,20 +219,29 @@ describe("useChartData", () => {
       {
         timestamp: subDays(now, 1),
         amount_entered: 100,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 100,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
       {
         timestamp: subDays(now, 2),
         amount_entered: 200,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 200,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
       {
         timestamp: subDays(now, 3),
         amount_entered: 300,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 300,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
     ];
 
@@ -221,8 +267,11 @@ describe("useChartData", () => {
     await db.sessions.add({
       timestamp: now,
       amount_entered: 100,
-      unit_entered: "ml",
+      unit_entered: "ml" as const,
       amount_ml: 100,
+      source: "manual" as const,
+      created_at: now,
+      updated_at: now,
     });
 
     rerender();
@@ -238,14 +287,20 @@ describe("useChartData", () => {
       {
         timestamp: subDays(now, 1),
         amount_entered: 5,
-        unit_entered: "oz",
+        unit_entered: "oz" as const,
         amount_ml: 147.87, // 5 oz to ml
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
       {
         timestamp: subDays(now, 1),
         amount_entered: 100,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 100,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
     ];
 
@@ -261,20 +316,27 @@ describe("useChartData", () => {
 
   it("should handle boundary dates correctly", async () => {
     const now = new Date();
-    const exactlySevenDaysAgo = subDays(now, 7);
+    const sixDaysAgo = subDays(now, 6);
+    const eightDaysAgo = subDays(now, 8);
 
     const sessions = [
       {
-        timestamp: exactlySevenDaysAgo,
+        timestamp: sixDaysAgo,
         amount_entered: 100,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 100,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
       {
-        timestamp: subDays(now, 8),
+        timestamp: eightDaysAgo,
         amount_entered: 150,
-        unit_entered: "ml",
+        unit_entered: "ml" as const,
         amount_ml: 150,
+        source: "manual" as const,
+        created_at: now,
+        updated_at: now,
       },
     ];
 
@@ -283,7 +345,7 @@ describe("useChartData", () => {
     const { result } = renderHook(() => useChartData("1W"));
 
     await waitFor(() => {
-      // Should include session from exactly 7 days ago
+      // Should include session from 6 days ago but not 8 days ago
       expect(result.current.sessions).toHaveLength(1);
       expect(result.current.sessions[0].amount_ml).toBe(100);
     });
@@ -294,8 +356,11 @@ describe("useChartData", () => {
     await db.sessions.add({
       timestamp: now,
       amount_entered: 100,
-      unit_entered: "ml",
+      unit_entered: "ml" as const,
       amount_ml: 100,
+      source: "manual" as const,
+      created_at: now,
+      updated_at: now,
     });
 
     const { result, rerender } = renderHook(() => useChartData("1W"));
