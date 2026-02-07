@@ -159,9 +159,19 @@ async function buildChatContextInner(
     return t < sevenDaysAgoMs && t >= thirtyDaysAgo.getTime();
   });
 
-  // Compute all stats
-  const todayStats = computeSessionStats(todaySessions);
-  const weekStats = computeSessionStats(last7d);
+  // Split sessions by type to avoid double-counting milk that is
+  // pumped then bottle-fed. Pump sessions = supply produced,
+  // feed sessions = intake consumed.
+  const pumpSessions7d = last7d.filter((s) => s.session_type === "pumping");
+  const feedSessions7d = last7d.filter((s) => s.session_type !== "pumping");
+  const pumpStats7d = computeSessionStats(pumpSessions7d);
+  const feedStats7d = computeSessionStats(feedSessions7d);
+
+  const todayPump = todaySessions.filter((s) => s.session_type === "pumping");
+  const todayFeed = todaySessions.filter((s) => s.session_type !== "pumping");
+  const todayPumpStats = computeSessionStats(todayPump);
+  const todayFeedStats = computeSessionStats(todayFeed);
+
   const weekDuration = computeDurationStats(last7d);
   const weekSideVols = computeSideVolumes(last7d);
   const weekRegularity = computeSessionRegularity(last7d);
@@ -169,13 +179,17 @@ async function buildChatContextInner(
   const dailyTotals30d = computeDailyTotals(last30d);
   const weeklyTotals2to4 = computeWeeklyTotals(weeks2to4);
   const allTimeSessions = [...olderSessions, ...last30d];
-  const allTimeStats = computeSessionStats(allTimeSessions);
+  const allTimePump = allTimeSessions.filter(
+    (s) => s.session_type === "pumping",
+  );
+  const allTimeFeed = allTimeSessions.filter(
+    (s) => s.session_type !== "pumping",
+  );
+  const allTimePumpStats = computeSessionStats(allTimePump);
+  const allTimeFeedStats = computeSessionStats(allTimeFeed);
   // Compute monthly totals from ALL sessions so months spanning the
   // 30-day boundary aren't split, and the supply trend includes recent data
   const monthlyTotals = computeMonthlyTotals(allTimeSessions);
-
-  const feedCount7d = last7d.filter((s) => s.session_type !== "pumping").length;
-  const pumpCount7d = last7d.filter((s) => s.session_type === "pumping").length;
 
   // Time-of-day distribution (last 7 days)
   const timeSlots = { night: 0, morning: 0, afternoon: 0, evening: 0 };
@@ -220,9 +234,16 @@ async function buildChatContextInner(
   } else {
     const todayDuration = computeDurationStats(todaySessions);
     const todaySideVols = computeSideVolumes(todaySessions);
-    lines.push(
-      `Sessions: ${todayStats.count} | Total: ${fmt(todayStats.total)} | Avg: ${fmt(todayStats.avg)}`,
-    );
+    if (todayPumpStats.count > 0) {
+      lines.push(
+        `Pumping: ${todayPumpStats.count} sessions | Total: ${fmt(todayPumpStats.total)} | Avg: ${fmt(todayPumpStats.avg)}`,
+      );
+    }
+    if (todayFeedStats.count > 0) {
+      lines.push(
+        `Feeding: ${todayFeedStats.count} sessions | Total: ${fmt(todayFeedStats.total)} | Avg: ${fmt(todayFeedStats.avg)}`,
+      );
+    }
     if (todayDuration.count_with_duration > 0) {
       lines.push(`Duration: avg ${todayDuration.avg_min}min`);
     }
@@ -259,15 +280,24 @@ async function buildChatContextInner(
 
   // --- Last 7 Days (full stats) ---
   lines.push("\n### Last 7 Days");
-  if (weekStats.count === 0) {
+  const weekTotalCount = pumpStats7d.count + feedStats7d.count;
+  if (weekTotalCount === 0) {
     lines.push("No sessions in the last 7 days.");
   } else {
-    lines.push(
-      `Sessions: ${weekStats.count} | Total: ${fmt(weekStats.total)} | Daily avg: ${fmt(Math.round(weekStats.total / 7))} | Per-session avg: ${fmt(weekStats.avg)}`,
-    );
-    lines.push(`Min/Max session: ${fmt(weekStats.min)}/${fmt(weekStats.max)}`);
-    if (feedCount7d > 0 || pumpCount7d > 0) {
-      lines.push(`Types: ${feedCount7d} feed, ${pumpCount7d} pump`);
+    if (pumpStats7d.count > 0) {
+      lines.push(
+        `Pumping: ${pumpStats7d.count} sessions | Total: ${fmt(pumpStats7d.total)} | Daily avg: ${fmt(Math.round(pumpStats7d.total / 7))} | Per-session avg: ${fmt(pumpStats7d.avg)} | Range: ${fmt(pumpStats7d.min)}-${fmt(pumpStats7d.max)}`,
+      );
+    }
+    if (feedStats7d.count > 0) {
+      lines.push(
+        `Feeding: ${feedStats7d.count} sessions | Total: ${fmt(feedStats7d.total)} | Daily avg: ${fmt(Math.round(feedStats7d.total / 7))} | Per-session avg: ${fmt(feedStats7d.avg)} | Range: ${fmt(feedStats7d.min)}-${fmt(feedStats7d.max)}`,
+      );
+    }
+    if (pumpStats7d.count > 0 && feedStats7d.count > 0) {
+      lines.push(
+        `Note: Pump and feed totals may overlap when pumped milk is later bottle-fed.`,
+      );
     }
     lines.push(
       `Time: ${timeSlots.morning} morn, ${timeSlots.afternoon} aftn, ${timeSlots.evening} eve, ${timeSlots.night} night`,
@@ -303,10 +333,11 @@ async function buildChatContextInner(
   if (dailyTotals7d.length > 0) {
     lines.push("\n### Daily Totals (7d)");
     for (const d of dailyTotals7d) {
-      const parts = [`${d.date}: ${fmt(d.total_ml)} (${d.count}s`];
-      if (d.pump_ml > 0) parts.push(`${fmt(d.pump_ml)}p`);
-      if (d.feed_ml > 0) parts.push(`${fmt(d.feed_ml)}f`);
-      lines.push(parts.join(", ") + ")");
+      const parts: string[] = [`${d.date}:`];
+      if (d.pump_ml > 0) parts.push(`pumped ${fmt(d.pump_ml)}`);
+      if (d.feed_ml > 0) parts.push(`fed ${fmt(d.feed_ml)}`);
+      parts.push(`(${d.count} sessions)`);
+      lines.push(parts.join(" "));
     }
   }
 
@@ -314,24 +345,29 @@ async function buildChatContextInner(
   if (weeklyTotals2to4.length > 0) {
     lines.push("\n### Weeks 2-4");
     for (const w of weeklyTotals2to4) {
-      lines.push(
-        `W ${w.weekStart}: ${fmt(w.total_ml)} ${w.count}s avg/d:${fmt(w.avg_daily_ml)}`,
-      );
+      const parts: string[] = [`W ${w.weekStart}:`];
+      if (w.pump_ml > 0) parts.push(`pumped ${fmt(w.pump_ml)}`);
+      if (w.feed_ml > 0) parts.push(`fed ${fmt(w.feed_ml)}`);
+      parts.push(`${w.count} sessions (${w.days_with_data}d)`);
+      lines.push(parts.join(" "));
     }
   }
 
-  // --- 30-Day Trend ---
-  if (dailyTotals30d.length > 2) {
-    const avg30d =
-      dailyTotals30d.reduce((s, d) => s + d.total_ml, 0) /
-      dailyTotals30d.length;
-    const mid = Math.floor(dailyTotals30d.length / 2);
+  // --- 30-Day Trend (pump supply) ---
+  // Use pump_ml for supply trend to avoid double-counting with feeds.
+  // Divide by ALL days in the range (not just days with pump data) to
+  // reflect the true daily rate.
+  const totalPump30d = dailyTotals30d.reduce((s, d) => s + d.pump_ml, 0);
+  const daysInRange = dailyTotals30d.length;
+  if (totalPump30d > 0 && daysInRange > 2) {
+    const avg30d = totalPump30d / daysInRange;
+    const mid = Math.floor(daysInRange / 2);
     const firstHalf = dailyTotals30d.slice(0, mid);
     const secondHalf = dailyTotals30d.slice(mid);
     const avgFirst =
-      firstHalf.reduce((s, d) => s + d.total_ml, 0) / firstHalf.length;
+      firstHalf.reduce((s, d) => s + d.pump_ml, 0) / firstHalf.length;
     const avgSecond =
-      secondHalf.reduce((s, d) => s + d.total_ml, 0) / secondHalf.length;
+      secondHalf.reduce((s, d) => s + d.pump_ml, 0) / secondHalf.length;
     const trend =
       avgSecond > avgFirst * 1.05
         ? "increasing"
@@ -339,8 +375,8 @@ async function buildChatContextInner(
           ? "decreasing"
           : "stable";
 
-    // Consistency: coefficient of variation
-    const dailyAmounts = dailyTotals30d.map((d) => d.total_ml);
+    // Consistency: coefficient of variation across all days (including zero-pump days)
+    const dailyAmounts = dailyTotals30d.map((d) => d.pump_ml);
     const mean = dailyAmounts.reduce((a, b) => a + b, 0) / dailyAmounts.length;
     const variance =
       dailyAmounts.reduce((a, v) => a + (v - mean) ** 2, 0) /
@@ -348,19 +384,28 @@ async function buildChatContextInner(
     const cv = mean > 0 ? Math.sqrt(variance) / mean : 0;
     const consistency = cv < 0.15 ? "high" : cv < 0.3 ? "moderate" : "variable";
 
-    lines.push("\n### 30-Day Trend");
+    lines.push("\n### 30-Day Supply Trend (pump sessions only)");
     lines.push(
-      `Daily avg: ${fmt(avg30d)} | Trend: ${trend} | Consistency: ${consistency} (CV ${cv.toFixed(2)})`,
+      `Daily avg pumped: ${fmt(avg30d)} | Trend: ${trend} | Consistency: ${consistency} (CV ${cv.toFixed(2)})`,
     );
+  } else if (daysInRange > 2) {
+    // Fallback to feed-only data if no pump sessions
+    const avg30d =
+      dailyTotals30d.reduce((s, d) => s + d.feed_ml, 0) / daysInRange;
+
+    lines.push("\n### 30-Day Feed Trend");
+    lines.push(`Daily avg fed: ${fmt(avg30d)}`);
   }
 
   // --- Monthly History (older data) ---
   if (monthlyTotals.length > 0) {
     lines.push("\n### Monthly History");
     for (const m of monthlyTotals) {
-      lines.push(
-        `${m.month}: ${fmt(m.total_ml)} ${m.count}s avg/d:${fmt(m.avg_daily_ml)} (${m.days_with_data}d logged)`,
-      );
+      const parts: string[] = [`${m.month}:`];
+      if (m.pump_ml > 0) parts.push(`pumped ${fmt(m.pump_ml)}`);
+      if (m.feed_ml > 0) parts.push(`fed ${fmt(m.feed_ml)}`);
+      parts.push(`${m.count} sessions (${m.days_with_data}d logged)`);
+      lines.push(parts.join(" "));
     }
   }
 
@@ -371,24 +416,45 @@ async function buildChatContextInner(
       0,
     );
     lines.push("\n### All-Time Stats");
-    lines.push(
-      `Total volume: ${fmt(allTimeStats.total)} | Sessions: ${allTimeStats.count} | Days logged: ${totalDaysLogged}`,
-    );
+    if (allTimePumpStats.count > 0) {
+      lines.push(
+        `Total pumped: ${fmt(allTimePumpStats.total)} (${allTimePumpStats.count} sessions)`,
+      );
+    }
+    if (allTimeFeedStats.count > 0) {
+      lines.push(
+        `Total fed: ${fmt(allTimeFeedStats.total)} (${allTimeFeedStats.count} sessions)`,
+      );
+    }
+    lines.push(`Days logged: ${totalDaysLogged}`);
     if (totalDaysLogged > 1) {
-      const overallDailyAvg = allTimeStats.total / totalDaysLogged;
-      lines.push(`Overall daily avg: ${fmt(Math.round(overallDailyAvg))}`);
+      if (allTimePumpStats.count > 0) {
+        lines.push(
+          `Daily avg pumped: ${fmt(Math.round(allTimePumpStats.total / totalDaysLogged))}`,
+        );
+      }
+      if (allTimeFeedStats.count > 0) {
+        lines.push(
+          `Daily avg fed: ${fmt(Math.round(allTimeFeedStats.total / totalDaysLogged))}`,
+        );
+      }
 
-      // Supply trend: compare first month vs last month
+      // Supply trend: compare first month vs last month (pump only)
       if (monthlyTotals.length >= 2) {
         const firstMonth = monthlyTotals[0];
         const lastMonth = monthlyTotals[monthlyTotals.length - 1];
-        if (firstMonth.avg_daily_ml > 0) {
+        if (
+          firstMonth.pump_ml > 0 &&
+          lastMonth.pump_ml > 0 &&
+          firstMonth.days_with_data > 0 &&
+          lastMonth.days_with_data > 0
+        ) {
+          const firstAvgDaily = firstMonth.pump_ml / firstMonth.days_with_data;
+          const lastAvgDaily = lastMonth.pump_ml / lastMonth.days_with_data;
           const changePct =
-            ((lastMonth.avg_daily_ml - firstMonth.avg_daily_ml) /
-              firstMonth.avg_daily_ml) *
-            100;
+            ((lastAvgDaily - firstAvgDaily) / firstAvgDaily) * 100;
           lines.push(
-            `Supply trend since start: ${changePct >= 0 ? "+" : ""}${changePct.toFixed(1)}%`,
+            `Pump supply trend since start: ${changePct >= 0 ? "+" : ""}${changePct.toFixed(1)}%`,
           );
         }
       }

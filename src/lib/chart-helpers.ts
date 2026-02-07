@@ -617,13 +617,18 @@ export function buildDailyTotalsOption(
 
   const lineData = movingAvg.map((d) => [d.date, convertVal(d.avg, unit)]);
 
+  // When both pump and feed exist, use pump totals for avg/goal to avoid
+  // double-counting milk that is pumped then bottle-fed.
+  const statsVals = useStacked
+    ? dailyTotals.map((d) => convertVal(d.pump_ml, unit))
+    : dailyTotals.map((d) => convertVal(d.total_ml, unit));
   const totalVals = dailyTotals.map((d) => convertVal(d.total_ml, unit));
-  const dailyAvg = totalVals.length
-    ? totalVals.reduce((a, b) => a + b, 0) / totalVals.length
+  const dailyAvg = statsVals.length
+    ? statsVals.reduce((a, b) => a + b, 0) / statsVals.length
     : 0;
-  const dailyMax = totalVals.length ? safeMax(totalVals) : 0;
+  const dailyMax = statsVals.length ? safeMax(statsVals) : 0;
 
-  const sorted = [...totalVals].sort((a, b) => a - b);
+  const sorted = [...statsVals].sort((a, b) => a - b);
   const p75 =
     sorted.length > 3 ? sorted[Math.floor(sorted.length * 0.75)] : dailyMax;
   const goalStep = unit === "ml" ? 100 : 5;
@@ -1076,17 +1081,22 @@ export function computeVisibleDailyStats(
     };
   }
 
-  const totals = visible.map((d) => convertVal(d.total_ml, unit));
-  const total = totals.reduce((a, b) => a + b, 0);
-  const sessionCount = visible.reduce((a, d) => a + d.count, 0);
+  // When both pump and feed data exist, use pump totals to avoid
+  // double-counting milk that is pumped then bottle-fed.
+  const hasBothTypes =
+    visible.some((d) => d.pump_ml > 0) && visible.some((d) => d.feed_ml > 0);
+  const vals = hasBothTypes
+    ? visible.map((d) => convertVal(d.pump_ml, unit))
+    : visible.map((d) => convertVal(d.total_ml, unit));
+  const total = vals.reduce((a, b) => a + b, 0);
 
   return {
     count: visible.length,
     total: Math.round(total),
     avg: Math.round(total / visible.length),
-    min: Math.round(safeMin(totals)),
-    max: Math.round(safeMax(totals)),
-    feedCount: sessionCount,
+    min: Math.round(safeMin(vals)),
+    max: Math.round(safeMax(vals)),
+    feedCount: visible.reduce((a, d) => a + d.count, 0),
     pumpCount: 0,
   };
 }

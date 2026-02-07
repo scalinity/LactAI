@@ -314,6 +314,8 @@ export function computeSessionRegularity(sessions: Session[]): RegularityStats {
 export interface WeeklyTotal {
   weekStart: string; // "YYYY-MM-DD" (Monday)
   total_ml: number;
+  feed_ml: number;
+  pump_ml: number;
   count: number;
   avg_daily_ml: number;
   days_with_data: number;
@@ -322,20 +324,31 @@ export interface WeeklyTotal {
 export function computeWeeklyTotals(sessions: Session[]): WeeklyTotal[] {
   const grouped = new Map<
     string,
-    { total: number; count: number; days: Set<string> }
+    {
+      total: number;
+      feed: number;
+      pump: number;
+      count: number;
+      days: Set<string>;
+    }
   >();
 
   for (const s of sessions) {
     const weekStart = format(startOfISOWeek(s.timestamp), "yyyy-MM-dd");
     const day = format(s.timestamp, "yyyy-MM-dd");
+    const isPump = s.session_type === "pumping";
     const existing = grouped.get(weekStart);
     if (existing) {
       existing.total += s.amount_ml;
       existing.count += 1;
       existing.days.add(day);
+      if (isPump) existing.pump += s.amount_ml;
+      else existing.feed += s.amount_ml;
     } else {
       grouped.set(weekStart, {
         total: s.amount_ml,
+        feed: isPump ? 0 : s.amount_ml,
+        pump: isPump ? s.amount_ml : 0,
         count: 1,
         days: new Set([day]),
       });
@@ -343,9 +356,11 @@ export function computeWeeklyTotals(sessions: Session[]): WeeklyTotal[] {
   }
 
   return Array.from(grouped.entries())
-    .map(([weekStart, { total, count, days }]) => ({
+    .map(([weekStart, { total, feed, pump, count, days }]) => ({
       weekStart,
       total_ml: Math.round(total),
+      feed_ml: Math.round(feed),
+      pump_ml: Math.round(pump),
       count,
       avg_daily_ml: Math.round(total / days.size),
       days_with_data: days.size,
