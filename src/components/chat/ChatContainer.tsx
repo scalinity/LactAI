@@ -13,7 +13,8 @@ import { useTranslation } from "@/i18n";
 
 export default function ChatContainer() {
   const { t } = useTranslation();
-  const { activeThreadId, isStreaming, streamingContent } = useChatStore();
+  const { activeThreadId, isStreaming, streamingThreadId, streamingContent } =
+    useChatStore();
   const messages = useChatMessages(activeThreadId ?? undefined);
   const { sendMessage, createThread } = useChatActions();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -43,6 +44,8 @@ export default function ChatContainer() {
     await sendMessage(content, image, threadId);
   };
 
+  const isActiveThreadStreaming =
+    isStreaming && streamingThreadId === activeThreadId;
   const isEmpty = !messages || messages.length === 0;
 
   const handlePromptSelect = useCallback((prompt: string) => {
@@ -52,7 +55,7 @@ export default function ChatContainer() {
   return (
     <div
       className={cn(
-        "flex h-[calc(100vh-140px-env(safe-area-inset-bottom)-4rem)] flex-col",
+        "flex flex-1 min-h-0 flex-col",
         isEmpty && "justify-center",
       )}
     >
@@ -73,7 +76,7 @@ export default function ChatContainer() {
         ) : (
           messages.map((msg) => <MessageBubble key={msg.id} message={msg} />)
         )}
-        {isStreaming && streamingContent && (
+        {isActiveThreadStreaming && streamingContent && (
           <div className="flex flex-col gap-1 items-start">
             <div className="max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap bg-surface text-plum shadow-sm border border-plum/5 rounded-bl-md">
               {streamingContent}
@@ -81,7 +84,7 @@ export default function ChatContainer() {
             </div>
           </div>
         )}
-        {isStreaming && !streamingContent && (
+        {isActiveThreadStreaming && !streamingContent && (
           <div className="flex items-center gap-2 px-2">
             <Spinner size="sm" />
             <span className="text-xs text-plum/40">{t("chat.thinking")}</span>
@@ -90,7 +93,7 @@ export default function ChatContainer() {
       </div>
       <ChatInput
         onSend={handleSend}
-        disabled={isStreaming}
+        disabled={isActiveThreadStreaming}
         externalPrompt={pendingPrompt}
         className="mt-auto"
         showStarters={isEmpty}

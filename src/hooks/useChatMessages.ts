@@ -68,7 +68,7 @@ export function useChatActions() {
       image,
     });
 
-    setStreaming(true);
+    setStreaming(true, resolvedThreadId);
     setStreamingContent("");
     try {
       // Read preferred unit from store. If persist middleware hasn't
