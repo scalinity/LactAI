@@ -4,7 +4,6 @@ import { getInsights } from "@/lib/api";
 import type { InsightsResponse, InsightsEntry } from "@/lib/api";
 import type { RangePreset } from "@/types/common";
 import type { Session } from "@/types/session";
-
 const PERIOD_MAP: Record<RangePreset, string> = {
   "1W": "7d",
   "1M": "30d",

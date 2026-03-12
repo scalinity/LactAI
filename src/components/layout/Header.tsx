@@ -8,7 +8,7 @@ function TimerIndicator() {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    if (!isRunning || !startedAt) return;
+    if (!isRunning || !startedAt) return null;
 
     setElapsed(Date.now() - startedAt);
     const interval = setInterval(() => {

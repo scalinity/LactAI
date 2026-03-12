@@ -54,6 +54,7 @@ export const deviceIdMiddleware = createMiddleware<{ Bindings: Env }>(
       );
     }
     await next();
+    return null;
   },
 );
 
@@ -84,6 +85,12 @@ export const dailyBudgetMiddleware = createMiddleware<{ Bindings: Env }>(
     const ipCurrent = parseCounter(ipStr);
 
     if (deviceCurrent >= max) {
+      
+    }
+
+    return null;
+  },
+);
       return c.json(
         {
           error: "DAILY_LIMIT_EXCEEDED",

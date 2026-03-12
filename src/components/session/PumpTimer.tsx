@@ -20,7 +20,7 @@ export default function PumpTimer() {
   useEffect(() => {
     if (!isRunning || !startedAt) {
       setElapsed(0);
-      return;
+      return null;
     }
 
     setElapsed(Date.now() - startedAt);

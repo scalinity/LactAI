@@ -21,7 +21,7 @@ export default function Modal({
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) return null;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
