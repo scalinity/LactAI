@@ -145,6 +145,8 @@ export default function OnboardingTutorial() {
           const onScrollEnd = () => {
             captureRect();
             window.removeEventListener("scrollend", onScrollEnd);
+          };
+
   }, [currentStep, isOpen, navigate, location.pathname]);
 
   // Update highlight position on resize

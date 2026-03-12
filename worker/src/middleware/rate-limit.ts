@@ -77,6 +77,8 @@ export const dailyBudgetMiddleware = createMiddleware<{ Bindings: Env }>(
     // Always check device-based rate limit; only check IP if available
     const ipKey = ip ? `daily-ip:${ip}:${today}` : null;
     const [deviceStr, ipStr] = await Promise.all([
+async (c) => {
+    const [deviceStr, ipStr] = await Promise.all([
       c.env.IMAGE_CACHE.get(deviceKey),
       ipKey ? c.env.IMAGE_CACHE.get(ipKey) : Promise.resolve(null),
     ]);
@@ -91,43 +93,44 @@ export const dailyBudgetMiddleware = createMiddleware<{ Bindings: Env }>(
     return null;
   },
 );
-      return c.json(
-        {
-          error: "DAILY_LIMIT_EXCEEDED",
-          message: `Maximum ${max} AI requests per day reached`,
-          resets: "midnight UTC",
-        },
-        {
-          status: 429,
-          headers: { "Retry-After": String(RETRY_AFTER_SECONDS) },
-        },
-      );
-    }
+    return c.json(
+      {
+        error: "DAILY_LIMIT_EXCEEDED",
+        message: `Maximum ${max} AI requests per day reached`,
+        resets: "midnight UTC",
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(RETRY_AFTER_SECONDS) },
+      },
+    );
+  }
 
-    if (ipKey && ipCurrent >= ipMax) {
-      return c.json(
-        {
-          error: "DAILY_LIMIT_EXCEEDED",
-          message: "Rate limit exceeded for this network",
-          resets: "midnight UTC",
-        },
-        {
-          status: 429,
-          headers: { "Retry-After": String(RETRY_AFTER_SECONDS) },
-        },
-      );
-    }
+  if (ipKey && ipCurrent >= ipMax) {
+    return c.json(
+      {
+        error: "DAILY_LIMIT_EXCEEDED",
+        message: "Rate limit exceeded for this network",
+        resets: "midnight UTC",
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(RETRY_AFTER_SECONDS) },
+      },
+    );
+  }
 
-    // Increment counters (await, not waitUntil)
-    const puts: Promise<void>[] = [
-      c.env.IMAGE_CACHE.put(deviceKey, String(deviceCurrent + 1), {
+  // Increment counters (await, not waitUntil)
+  const puts: Promise<void>[] = [
+    c.env.IMAGE_CACHE.put(deviceKey, String(deviceCurrent + 1), {
+      expirationTtl: SECONDS_PER_DAY,
+    }),
+  ];
+  if (ipKey) {
+    puts.push(
+      c.env.IMAGE_CACHE.put(ipKey, String(ipCurrent + 1), {
         expirationTtl: SECONDS_PER_DAY,
       }),
-    ];
-    if (ipKey) {
-      puts.push(
-        c.env.IMAGE_CACHE.put(ipKey, String(ipCurrent + 1), {
-          expirationTtl: SECONDS_PER_DAY,
         }),
       );
     }
