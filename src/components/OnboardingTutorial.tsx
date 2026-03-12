@@ -101,7 +101,7 @@ export default function OnboardingTutorial() {
 
   useEffect(() => {
     // Only start the tutorial after the welcome letter has been dismissed
-    if (!hasCompletedOnboarding) return;
+    if (!hasCompletedOnboarding) return null;
 
     const hasSeenTutorial = localStorage.getItem("claudiaflow-tutorial-seen");
     if (!hasSeenTutorial) {
@@ -109,8 +109,9 @@ export default function OnboardingTutorial() {
       const timer = setTimeout(() => setIsOpen(true), 500);
       return () => clearTimeout(timer);
     }
-  }, [hasCompletedOnboarding]);
 
+    return null;
+  }, [hasCompletedOnboarding]);
   useEffect(() => {
     if (!isOpen) return;
 
@@ -144,56 +145,11 @@ export default function OnboardingTutorial() {
           const onScrollEnd = () => {
             captureRect();
             window.removeEventListener("scrollend", onScrollEnd);
-            clearTimeout(rectTimer);
-          };
-
-          window.addEventListener("scrollend", onScrollEnd, { once: true });
-          // Fallback for browsers without scrollend support
-          rectTimer = setTimeout(() => {
-            window.removeEventListener("scrollend", onScrollEnd);
-            captureRect();
-          }, 600);
-
-          scrollEndCleanup = () => {
-            window.removeEventListener("scrollend", onScrollEnd);
-          };
-
-          return true;
-        }
-        return false;
-      };
-
-      // Try immediately
-      if (!findElement()) {
-        // If not found, retry after a delay for lazy-loaded content
-        const retryTimer = setTimeout(() => {
-          findElement();
-        }, 600);
-        return () => {
-          clearTimeout(retryTimer);
-          clearTimeout(rectTimer);
-          scrollEndCleanup?.();
-        };
-      }
-    } else {
-      setHighlightedElement(null);
-      setElementRect(null);
-    }
-
-    // Navigate to route if needed
-    if (step.route && location.pathname !== step.route) {
-      navigate(step.route);
-    }
-
-    return () => {
-      clearTimeout(rectTimer);
-      scrollEndCleanup?.();
-    };
   }, [currentStep, isOpen, navigate, location.pathname]);
 
   // Update highlight position on resize
   useEffect(() => {
-    if (!isOpen || !highlightedElement) return;
+    if (!isOpen || !highlightedElement) return null;
 
     const handleResize = () => {
       // Update the cached rect on resize
@@ -234,7 +190,7 @@ export default function OnboardingTutorial() {
 
   // Keyboard navigation
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) return null;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {

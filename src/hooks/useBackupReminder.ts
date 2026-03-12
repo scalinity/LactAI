@@ -25,5 +25,7 @@ export function useBackupReminder() {
 
       return () => clearTimeout(timer);
     }
+
+    return null;
   }, [lastBackupPrompt, setLastBackupPrompt]);
 }

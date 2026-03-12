@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import { useAppStore } from "@/stores/useAppStore";
 import { Heart } from "lucide-react";
 import { UnitToggle } from "@/components/ui/UnitToggle";
-
 export default function WelcomeLetter() {
   const hasCompletedOnboarding = useAppStore((s) => s.hasCompletedOnboarding);
   const setHasCompletedOnboarding = useAppStore(
