@@ -1,0 +1,13 @@
+{
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": true
+  },
+  "env": {
+    "GIT_AUTHOR_NAME": "Daniel Escalante",
+    "GIT_AUTHOR_EMAIL": "241182785+scalinity@users.noreply.github.com",
+    "GIT_COMMITTER_NAME": "Daniel Escalante",
+    "GIT_COMMITTER_EMAIL": "241182785+scalinity@users.noreply.github.com"
+  }
+}
