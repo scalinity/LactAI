@@ -23,8 +23,7 @@ blob-report/
 .wrangler/
 
 # Claude Code
-.claude/*
-!.claude/settings.json
+.claude/
 
 # Playwright MCP
 .playwright-mcp/
